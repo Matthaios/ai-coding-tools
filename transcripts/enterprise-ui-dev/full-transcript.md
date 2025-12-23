@@ -1,0 +1,2958 @@
+# Enterprise UI Development: Testing & Code Quality
+
+**Instructor:** Steve Kinney
+**URL:** https://frontendmasters.com/courses/enterprise-ui-dev/
+
+---
+
+# 1. Introduction
+
+[00:00:00] >> Welcome to this course on enterprise user interface development. When we talk about enterprise user interface development, enterprise is just a word that means big, right. Big and usually like long lived versus like, the little like side project for a weekend. And with that comes a lot of extra like bonus things to worry about, all right. 
+
+[00:00:29] So let's talk about what this course is, this is a course on how to build infrastructure. How to build the infrastructure needed to manage a large code base supported by a team of contributors. That means ideally, not just you. Usually, to the point where any code base over a long enough period of time, it's gonna get a few unique qualities to it. 
+
+[00:00:54] It is probably going to get big, it is probably going to have a series of choices that probably seemed reasonable and good at the time. And, in the fullness of time, turns out to maybe have its edge cases, right? And there's lots of reasons for that, and we'll talk about it. 
+
+[00:01:15] But let's kind of talk about some of these situations where, if any of these statements resonate with you, then this course might be for you. So hypothetically, maybe you've inherited an older code base, right, who doesn't love that? Maybe that code base has been through let's call them, changes in product direction, right? 
+
+[00:01:40] What it was initially supposed to do, maybe it's a different thing now. Some of the most fun code bases that I've had the pleasure of working in are usually the ones where. Let's build this like proof of concept like demo app that we definitely shouldn't bring to production. 
+
+[00:02:04] What's that the CEO wants to make the next big thing and it's got to be out in a week, and we're gonna bring it to production, right? So you have some of those, you have ones where maybe you were going one direction and then you did like a pivot in the direction now. 
+
+[00:02:16] It's a totally different tack that you're taking out and now you have that kind of original foundation that may no longer be serving you. Yeah, maybe you're looking to migrate from an older framework, I'm looking at you backbone to whatever the new hotness or whatever the hype cycle is these days. 
+
+[00:02:36] And you want to be able to like do that without like, having your pager go off from now until the end of eternity, right. Or maybe and like I have been lucky enough to get to do this one once or twice. Maybe you are breaking ground on a brand new project, with no tech debt whats so ever and you just want to start things off on the right foot. 
+
+[00:03:01] No matter what there is something in the generalized strategy of this course that would kind of appeal to that, right? The code base I work on now it's not two years old yet it's 17, 18 months maybe 19 months, right? Even as I was preparing for this there are already things in the code base that is not particularly old and not. 
+
+[00:03:27] Saddled with too much legacy, where there are already things that like some of the strategies that we're talking about this workshop already applied to the thing that I work on every day, right. And there's always reasons there are the initial plans you had even 18 months ago are no longer, some of the things you're doing now. 
+
+[00:03:46] I was, for some reason decided to use a pre -⁠1.0 framework, so that came with a fun, set of things to learn as well. And then there's just the little mistakes that don't seem like a big deal at the time, for instance, not failing the build on lint errors and just getting warnings, or the same thing for accessibility. 
+
+[00:04:06] Then when you go to actually turn them on, you realize that, over the course of six months, a bunch of well -meaning changes, saddled you with a bunch of debt that you need to pay down, right? So even in a relatively new codebase, but especially, let's say pleasure. 
+
+[00:04:21] Let's say I've had the pleasure of working on like some front end code bases that are like a decade old, right? There are a lot of those become really difficult to manage and difficult to maintain. And we're gonna talk a little bit about what the word like maintenance means, and how do you maintain something and some of the parts around that. 
+
+[00:04:42] But first, I should probably introduce myself. My name is Steve, I work on the frontend engineering team at a company called Temporal. When I started, I was the frontend architect, which at a startup is a fancy way to say. The first front end engineer, and I had it like my previous job so I think they just like totally gave me that title and make me feel good. 
+
+[00:05:06] Now I run a team of about six or seven depending on the day, Front End engineers across two or three of our various code bases, whether it's an open source product. Cloud based SaaS product, the marketing website, some other internal stuff as well. And all those situations on that previous slide from the changing product direction to the thing that was probably never supposed to go to production to the like brand new codebase to the decade old one I have 
+
+[00:05:35] seen those at various points. And so, that kind of culminates today, into like a set of practices and strategies around kind of starting to wrap your mind around. The kind of just nuances that come along with that. So what are we gonna cover? As you can imagine, having a relatively decent testing strategy is somewhat important if you're going to make changes, to a thing that you cannot hold in your head. 
+
+[00:06:12] So we will kind of talk a little bit about some of the fundamentals of philosophy of testing, and we're gonna run the gamut from unit testing. So your browser based tests would play, right to some component tests across different frameworks. All those kinds of things get to the point where, okay, we now know that we can touch things, without worrying about something else breaking off the other end. 
+
+[00:06:36] We will talk about like how and when to or to not to fake stuff, right? Like, a lot of times in a perfect world we would write end-to-end tests for everything, I aspire to live in that world one day, right? A lot of times we have to square, all the things that you've written a blog post about like, the right way to think about testing and then you have to square that with reality. 
+
+[00:07:00] And the fact that most of those things are not possible at any kind of scale, right? And so we kind of talk about, like how to manage the kind of like, platonic ideal of what we're supposed to do with like the reality of the code that we live in every day. 
+
+[00:07:17] We'll talk a little bit like as we kinda go through some of the setting up this infrastructure. When we can talk a little bit about like okay, what are some of the best practices or at least let me rephrase that. Best practices in my experience, for kind of structuring and thinking about whether it's components, whether it's the larger architecture of your application. 
+
+[00:07:42] And like where can we kind of like learn from some of that. Some of those, depending on whether or not you are maintaining a relatively old large codebase. Or a brand new one that will have different amounts of like applicability, depends on those things but we will at least kind of talk about that. 
+
+[00:08:00] Cuz at one point like there will be an opportunity to kind of leverage those. And then, as we all know, the real worst person on your team is you six months ago, right. The tied for second place is everyone else on your team, who does not put semicolons where you like to have semicolons put right. 
+
+[00:08:19] And how do we actually like not so much about the semicolons, I don't wanna have that discussion, but like. We actually need this abstraction and we don't wanna just use let's say hypothetically fetch or like. Do we have a system to make sure that we don't accidentally ship a console log all the way to production or something along those lines. 
+
+[00:08:40] What are the ways to kind of like maintain, and check these things? Running theme all of our time together, is going to be the fact that like, a large enough codebase over a long enough period of time. You will not be able to hold all this stuff in your head, you will not be able to find everything through every code review, right? 
+
+[00:08:56] And so a big theme of our time together, is that kind of last bullet point down there. Which is how to build the processes, that make it so that you don't have to, right. Because we tend to get mad at our coworker who nitpicks all of our prs, right, and even I tend I'm the one that does that. 
+
+[00:09:16] I eventually feel bad and just give in, you know who doesn't give in, automation, right? And like people will argue with you, but like they'll usually just take the fact that the build fails and deal with it, right? Like eventually it might come to a point where if your tests are flaky, everything falls apart. 
+
+[00:09:33] But generally speaking, it is probably really good for the health of your team to have this stuff automated and dispassionate about all these things or whatever you agreed on and trying to like. Use it to the point where like it's serving you and not necessarily like pedantic.
+
+---
+
+# 2. What is Enterprise UI Development
+
+[00:00:00] >> The kinda core questions that we are gonna look at is how do we create maintainable code bases? I think a lot about when I started at my current job, one of the super-duper senior distributed system engineers went like, for an architect, what is that, right? And it made me think a little bit about what does it mean for a front-end app to scale? 
+
+[00:00:26] Because a database might have a million users, a hundred thousand users slamming at it, right? Your front-end application, generally speaking, they download the code into their one browser, and sure, it could be Internet Explorer or Safari, depending on the year. But generally speaking, the idea of a million people using it, it's not necessarily gonna have a larger effect than one or two, depending on other than the breadth of the different situations that they're using it in. 
+
+[00:00:53] So the way that I kind of explained the plight of maintaining a large front-end code base is, I was like, you know how on the backend, you all like to break everything into very small microservices that don't know anything about anything and are totally isolated and encapsulated? He's like, yeah, yeah, yeah. 
+
+[00:01:11] And I'm like, my job is to hide that from our customers, right? They should never know that you did that, right? And so the way I think that a lot of times a large front-end code base tends to fall apart is not necessarily that it goes down a database, right, or stops taking requests. 
+
+[00:01:27] It's usually that it slowly erodes, and kind of in physics, everything tends towards entropy, which is chaos, right? It slowly erodes to the fact that what should have been a one-point ticket or a three-point ticket, right, a relatively easy thing to do, everyone' like, I don't know, that might take two weeks, right? 
+
+[00:01:51] Cuz we don't know what will break. And every time you try to push something in production, someone's pager goes off, right? Insofar that we build these large, stateful applications, the way that they tend to break down on us is that they become so complex and so complicated and so chaotic that they become almost impossible to maintain. 
+
+[00:02:16] And that's when people start whispering about the rewrite, and I've done the rewrite, the rewrite never goes well, right? [LAUGH] It's just a new opportunity to make the same mistakes and start the process over again, but you will end up back there as well. And that is kind of what we are seeking in our time together in this course, is to basically figure out, to the best of our ability, how do we kind of manage that chaos and keep it under control. 
+
+[00:02:48] Like I said, even as I was putting all this together, and over the course of the last six months, even in my relatively, not particularly old, and it's open source code base, so I can't really hide anything from you. I have noticed, there are things where we need to focus on the testing over here. 
+
+[00:03:08] We need to, after we get all the lint errors handled and all the accessibility errors handled, then that needs to actually break the build. But you can't break it in the very beginning because then you would never ship again, right? And so how do you kinda manage these things? 
+
+[00:03:20] Cuz they exist in new code bases and they absolutely exist in big code bases. If they don't exist in your code base, either you are the greatest front-end engineer and you're probably alone. Or you work on the greatest team possible, or it is so new and so small that you just haven't gotten there yet, right? 
+
+[00:03:40] And so that's great. Also, you should hang around, because maybe we can talk about how to make sure that you don't end up there, right? Because for all these things, each time that I've done this, it is, you're always trying to push back the ocean with a broom. 
+
+[00:03:56] But these strategies over time start to add up and you do have a code base that you're relatively happy working in, right? So yeah, so as I kinda said, right, it's probably hard to define what it means to build a maintainable application, as we spend the next several hours together talking about how to build a maintainable application. 
+
+[00:04:21] The best way to talk about it is to talk about what it's not, right? If you feel like you can't ship anything without being worried that something else is gonna pop off the other end and break, then your app is probably not maintainable, you literally can't maintain it. 
+
+[00:04:36] You want to be able to change stuff and confidently know you didn't break something, right? It's one thing, step one, you would love to change something and have nothing break. Step two, or second best, is you'd at least like to know before your customers find out, right? I joke that you'll always have tests, right? 
+
+[00:04:54] It's easy you have automated ones that run lightning fast. You're doing it yourself or your customers are doing it for you. Somebody is testing this software one way or the other. Maybe you wanna refactor without overwhelming fear. You know that you need to sit down and take a step back and think about this when a new version of whatever framework or even some library that you're using comes out and someone's like, should we upgrade? 
+
+[00:05:19] And you're like, should we upgrade? Absolutely, can we upgrade? No. And over the fear around that, like, let's wait until Thanksgiving break or the end of December to upgrade. That's when you start to know that it is time to think about some of these things. Yeah, updating dependencies and knowing that everything works without having to go testing a very small to-do list app, of course, you can do that. 
+
+[00:05:46] Even then, it can become tricky. Testing any kind of decently large application, that becomes like an all hands on deck, the team is kicking it for two weeks, which is not the best use of anyone's time. And the theme that we're gonna kinda deal with today is basically how do we automate this? 
+
+[00:06:06] How do we basically have processes and infrastructure that is making sure that we can feel confident? And yes, we should always have the human element there, right? Code reviews are great. They don't always work at scale. There's always like, whenever there's a bug, the joke to git blame who the last person touch it was. 
+
+[00:06:29] My thing is, well, who read the code review? Who approved it? And I am guilty of this, right? Sometimes you're tired, you don't have the same attention to detail, probably like the person who wrote it. Yeah, sometimes you just feel bad cuz you've been really nit-picky over things, right, and you get to the point where it's either it ships or it doesn't, right? 
+
+[00:06:50] And so code reviews, obviously a thing, but then can we build the infrastructure around it so that we're talking about more forward-thinking and high-level things rather than you have an extra space after that opening bracket, right? Have something deal with that for you, right? That's not a good use of anyone's time. 
+
+[00:07:09] Cool, and so again, this theme of automation. If I had to, and I did have to because I prepared for this, think about what are all the components of a well-architected, and that's a word that I don't love, but I stole from Amazon in terms of their cloud services. 
+
+[00:07:28] What are the pieces of a decent front-end architecture that you need to have kinda in place to be able to consistently ship software? Testing, right, all sorts of different kinds of testing, some of these are more possible than others, just to kind of make sure that everything works, because like I said, either you do it or you automate it. 
+
+[00:07:53] I think one of the nice things in the modern era is a lot of the tooling around this stuff is a lot better. I would argue that TypeScript, for instance, takes out an entire class of tests that I used to write, that I still occasionally write, cuz we trust that our APIs stay the same, but we don't really know that, right? 
+
+[00:08:14] Just because your type doesn't have undefined or null, that doesn't mean that the API didn't give you that. Some of the worst bugs I've ever seen was a well-meaning backend engineer accidentally shipping a breaking change to the API, right? But generally speaking, if you think about what TypeScript is, right, and we're not gonna get all the way into the weeds on this. 
+
+[00:08:33] But there's a certain spiritual aspect of it that is running through your entire code base, making sure that you pass any given function something that it expects, right, and yelling at you when you're unclear about that, right? That takes away the entire set of tests where it's like, you pass null into the function to see what happens, and then you pass all sorts of other bogus inputs, right? 
+
+[00:08:53] That can still happen cuz it's JavaScript at the end of the day, but there's an entire set of tests that will help in that case, right? Linting, and linting is tricky because there's the stylistic ones, which I'm not super interested in. One of the things that I've had to learn to do over time is let go of my stylistic preferences. 
+
+[00:09:15] And it's okay if someone uses a function declaration and somebody else uses a function expression, it's gonna be all right. That's not gonna be the thing that stops you from shipping stuff. That said, there are things in your linting that you might want to avoid unnecessarily confusing, like for loops or something along those lines. 
+
+[00:09:37] A really great example that I think a lot about is, for instance, we have an abstraction for making API requests. And yeah, under the hood, it's just using fetch, sure, sure, sure. But it's also doing things like, well, if there is an error, right, go ahead and bubble that up to Sentry, which is what we use to track errors in production, right? 
+
+[00:10:00] And then maybe it's got some retry logic. And generally speaking, it's also got types for the different endpoints that can hit so you don't mistype a URL. And it's got a whole bunch of features that we'll go ahead, and we have cursor-based pagination, so on and so forth, right? 
+
+[00:10:17] You should use that instead of using fetch, right, if you're working in the application that I work on. However, there's not really a test that's gonna catch that, right? That becomes a static analysis, like, hey, I noticed you used fetch here, maybe you can opt out of it if there was a really good reason. 
+
+[00:10:33] But let's automatically check, maybe you're brand new, maybe you're just switching in from another code base and you don't know everything, cuz yeah, we should document everything, except nobody reads it. And goes ahead and just kind of informs and helps guide the maintainability of code base. Cuz that's one of those things where a well-meaning mistake where somebody didn't know is all of a sudden, hey, when you're going to the post-mortem and you don't have any logs, because maybe the rejected promise didn't bubble up to your error reporting tools. 
+
+[00:11:04] And formatting, I think that just set Prettier up and let it do its thing and never have these conversations again is a world that I like to live in. The kind of one of the major thing's testing is obviously a huge part of our time together, all sorts of testing, all the different flavors of testing. 
+
+[00:11:22] That said, if you have to run NPM test, that's you're missing the point, right? So there should be some process that we'll go ahead and check the lint. There's some process that goes ahead and runs the tests for you on every push to a PR or something along those lines. 
+
+[00:11:38] So we'll talk a little bit about how to set that up. And we're gonna use GitHub Actions, which is wildly powerful for a somewhat free-ish tool, free on an open source repo, relatively cheap on a private repo. You can do really cool things, like have it automatically open issues for you. 
+
+[00:11:58] We have it set that when we bump the version on the open source UI, it will automatically open up a PR on our SaaS offering with a new version of that and run the tests there as well. A lot of this stuff will be bespoke to the unique needs that you have to solve for, but we'll kinda talk about the wide range of possibilities. 
+
+[00:12:19] And my goal is we'll do the kind of obvious things that everyone should do, but we'll also kind of explore some of the interesting recipes and edge cases. And my goal is that a week from now or two weeks from now, you're walking down the street and you're like, I could take this tedious manual process and put together a GitHub Action workflow. 
+
+[00:12:40] And if you use some other CI/CD tool, that too, whatever, that'll all work, but something to think about, what are all of the annoying things that you do, right? And when we get to the processes, I'll round back to deployment infrastructure in a second, the processes, which is like, okay, how do we design new features? 
+
+[00:13:00] Do we have a process for writing a design document? Who reviews those, right? Those things are also really key to the maintainability of your code base as well. On those build processes and systems and stuff along those lines, as it stands right now, we do this thing where it's like, we're gonna release every Monday. 
+
+[00:13:17] That's an hour meeting, with the goal to cut it down to 15 minutes, right? So every manual step, someone's taking a note of how can we automate this, right? And that's gonna be some of the stuff we look at today as well. And then we have that kinda structure. 
+
+[00:13:29] Does our view layer sit there and process a bunch of data and make a bunch of API requests? Well, that's gonna be hard to test, right? And we'll kinda see that in some cases. What is our deployment infrastructure? That's gonna be unique to every company you work at, but we'll at least talk about it at a high level. 
+
+[00:13:46] We talk a lot about technical debt. The other kinda thing that I wanna highlight is there's also this cognitive cost, right, to a complicated code base, right? If you know that all of your, if you follow whether it's a pattern like MVC, which is whatever, some pattern where you know, okay, all of the business logic is here. 
+
+[00:14:07] All of the fetching and massaging the data is over here, all of the view layers over here, we have that kind of setup and you kinda know where to go looking for something, right? That makes you way more productive in a code base than everything kind of jammed together. 
+
+[00:14:21] When we talk about testing, kind of one of the heuristics that I'm gonna kinda use, which is, if you have to mock and stub your own code, you've done something wrong, right? Third party things you don't control, sure, sure, sure. But if you are all of a sudden like, I don't have access to that hook from outside the component or the Redux store or what have you, it doesn't really matter, and you find yourself mocking things you own, right, that's a good sign you have not separated these concerns. 
+
+[00:14:58] And as I thought about it more and more, there are kind of the three levels, and this pyramid is designed after Maslow's hierarchy of needs, which is first, have the systems in place, right? If you don't have the systems, then you can wax poetic from your ivory tower about the best way to structure an application, it doesn't really matter. 
+
+[00:15:19] Also, you can talk about it over lunch, but unless you actually have a process for getting the team on board, and all those kinds of things, then it doesn't matter either, cuz it's just like your thoughts. And so those patterns, those kind of belief systems and how do we structure an application, sit on the foundation of do you have a system that keeps everyone honest about that? 
+
+[00:15:41] And do you have a process for kind of collaboration? Otherwise those parts don't really matter. And so we will spend a lot of time focusing on the systems, because one that's the most objective, right, everyone's code base is gonna be a little bit different, but we will when possible kind of talk about the processes and the patterns. 
+
+[00:15:58] With that, we will be writing some code and tweaking some stuff, right? I went through my own code base and tried to find, at one point, I was just gonna grab the entire open source code base, I realized that trying to grok that was a recipe of sadness. 
+
+[00:16:13] And I learned some things, even trying to pull certain functions out about how I'm gonna break a lot of my own rules. So [LAUGH] I have a set of things to do for myself after putting this all together, but trying to take some of those patterns into small, grokable pieces. 
+
+[00:16:29] So we will be kind of objectively, it's not gonna be hours upon hours of me waxing poetic for my ivory tower. We'll kinda look at some of these, particular the systems, with some small bite-sized little sample applications.
+
+---
+
+# 3. Tools for the Course
+
+[00:00:00] >> Because this is not necessarily a course on any given technology, I tried to, but we have to use some kinda technology, right? Because even, as Mark knows, not using your framework is a choice in and of itself [LAUGH]. So I tried to play to at least some kinda common denominators. 
+
+[00:00:16] The, one hill that I will die on, is I'm just gonna use TypeScript the entire time, right? I'm not going back to writing JavaScript. I'm not doing it, you can't make me. Every time I try to put together a more beginner-friendly course and I have to write JavaScript, it fills me with existential dread. 
+
+[00:00:35] So this is my excuse not to have to do that. So it will be TypeScript, that said. If you're, I've never written TypeScript before, you can get away with that, right? There's, this is not a course on TypeScript, this is there's shockingly little TypeScript ceremony, but for my own sanity. 
+
+[00:00:53] And then, this is actually the next slide, is slightly a lie, but it's mostly true. When it came down to what framework to use, you know it, you might love it. Might not, but you probably know it, which is React. That said, to prove a point, when we get to component testing and end to end testing, and unit testing is really framework agnostic. 
+
+[00:01:18] I did on occasion sample, put in some Svelte applications just to show you, this doesn't really matter, right? And so some of them, I've rebuilt the application in Svelte, the test is two characters different, right? In the way that you mount the component. And when it comes down to just driving a browser, it literally does not matter. 
+
+[00:01:36] And you would have to look at the code to even figure out what framework I'm using, right? So some amount of React but again, and we'll go through some little gotchas with React but, because there's more gotchas with React than other things. And we'll kinda talk about that. 
+
+[00:01:51] But again, you do not need to necessarily be an expert in React to do any of this. There's a lot of times there are examples in other frameworks as well, as long as other frameworks mean Svelte, let's see, one that I use every day. And nobody wants to watch me test the Vue component cuz I've never written Vue in production. 
+
+[00:02:11] And then some other just testing tools and like I said, most of these are somewhat agnostic, testing library. And if you've never used testing library before, there are various flavors of testing library. There's React testing library, you can guess what framework that tests. There is Svelte testing library, but under the hood there is just dom testing library. 
+
+[00:02:35] Which just basically renders an HTML component to either JS dom or happy dom and lets you fire events at it, right? And so completely agnostic other than the act of rendering a component, though that is specific to a given framework. But you could theoretically just like append child to document.body and test as well. 
+
+[00:03:01] Let's go all the way down to the lower right, left depends on which way you're looking at the screen. And play right which is a relatively new-ish tool for spinning up many a browser. Whether that's WebKit or Chromium or Edge, also known as Chromium, or Firefox. And actually just spinning up the application and kicking the tires on it across all of these different browsers. 
+
+[00:03:35] It is made by the team who originally worked on the protocols for Chrome to kinda drive it and control it. And then re-implemented those protocols across WebKit and Firefox so you can drive all of those as well. This is what we are using nowadays, and I say that with a little bit of hesitation. 
+
+[00:03:55] Because right now my code base is half between Cypress and Playwright. But it is incredibly powerful, so we'll take a look at that in the second half of our time together. In the middle, we have Vitest, Vitest? Is it Vite, is it Vite, I don't know, I say Vite. 
+
+[00:04:11] Which works with Vite as opposed to Webpack. That said, it is, mostly, 99% API compliant with Jest, right? Except that it also works with Vue and Svelte and other things as well. Despite the fact that we're using Vitest, when we grab extensions and third party libraries. You'll notice that a lot of times we just grab the Jest ones and drop them in and everything works fine on occasion, right? 
+
+[00:04:48] I'll even have configuration files for Jest, if you wanna run Jest against some of these things as well. The biggest difference is that you will import from Vitest instead of Jest. But generally speaking, they are API compliant except one is nicer to ES modules than the other. And now you've learned what my biases are. 
+
+[00:05:07] Cool, all right, so finally, kinda, as we wrap up our fun intro together. Like I said, we're gonna use TypeScript for everything, and we're gonna use it in strict mode. Again, Github Actions, you might use Travis, you might use circle CI, you might even have the pleasure of using Jenkins. 
+
+[00:05:23] Ideally, some of the stuff, yeah, we're all chuckling. ideally, all this stuff should apply, but by definition, I can remain relatively confident that most everyone has access to GitHub Actions, which is what I use as well. And like I said, in most of our conversations, rather than be, this is the way that you should do it, it's gonna be this is the way you should do it. 
+
+[00:05:46] Versus, this is how it happens in reality, and this is how [LAUGH] you should do it and this is how [LAUGH] you should do it when you have a deadline next week, right? Or there is an outage, right? And, or you've inherited a codebase with no test coverage to speak of. 
+
+[00:06:06] Let's bend the rules a little bit to be productive
+
+---
+
+# 4. Types of Tests
+
+[00:00:00] >> As you can kind of guess from the preamble, the majority of our time together is kind of on that systems piece and like, yes, could you write build processes for all sorts of things? Sure, but the lowest common denominator of the thing that you should be automating is likely and enforcing, is likely does your application work, right? 
+
+[00:00:21] Once you have hit that level of the hierarchy of needs, you can move up to other ones like, is the title of their pull request formatted in a way that automatically closes the JIRA ticket? When you're solving those kinds of problems, I love it, but you gotta you gotta solve the baseline problems first, right? 
+
+[00:00:40] So the problem with talking about testing is that we need to at least spend a few minutes together coming up with what is going to be in our time together our language of testing, right? Because there are a lot of terms those terms mean things and we use them wrong all the time. 
+
+[00:00:57] And most of these terms have been used wrong so much that sometimes the wrong way is more important than the right way. So most of the first section is, let's get on the same page when I say words, what they mean. And then we'll get kinda comfortable with the very basics of some of the tools that we're gonna use. 
+
+[00:01:13] Disclaimer, these are my definitions, and since I'm gonna do the majority of the talking. [LAUGH] Just so you, we have a common frame of reference to the things that I'm saying. These do not represent the opinions of my employer or anyone else in that matter, particularly anyone on Twitter, right, don't at me. 
+
+[00:01:34] There is a wide range of tests, they have different sets of trade-offs. Anyone that, it's not fair. I would be hesitant to say it should these are the best kinds of tests, there are trade-offs, right? At my very scientific diagram here, you can see that you've got on one end unit tests. 
+
+[00:01:55] You know what's cool about unit tests? They run really fast, right? Sometimes like if you have the right editor plugin, they'll like run in your editor and put a red squiggly line or something like to the left on the sidebar almost immediately, right? A lot of these are like put two things in function, see if the thing you expected to come out came out, right? 
+
+[00:02:15] That's really easy to run, like V8 super good at that kind of stuff. That said, they are testing to see if you put two things into the function, so the thing you expected to come out. Yeah, that that's great to know that but you know who's not doing that? 
+
+[00:02:31] Your customers, they are clicking buttons, right? Usually the most hostile way that they possibly can, they are clicking buttons from the web browser. So all the way on the other end, we've got to spin up a browser and pretend to be the user clicking buttons. Arguably, if you've got really good tests in the sense, right, that are doing all the things and exercising your application, you can be super confident that you didn't break anything. 
+
+[00:02:56] That said, as you are writing code, you're probably not running these all the time, right? Because spinning out the browser, navigating across, hitting the buttons, it's not slow, but it's not fast either, right? And sometimes you think about, what is the feedback loop that you have? And if you can get immediate feedback that the thing you did was bad, then you can make the next decision, right? 
+
+[00:03:16] If you have to wait four minutes, every time you make a decision, the number of thoughts you could have in a day is way lower, right? And so there might be people say, if it's covered by this test, you shouldn't have unit tests, I don't believe these people. 
+
+[00:03:30] Sometimes I wanna know real fast, sometimes I wanna know real confidently and I'm willing to wait a few minutes, right? These are both fair things and sometimes it may be I have two tests of different kinds covering relatively the same functionality because I'm two different people. I am both the person on call sometimes, and sometimes I'm the person trying to write some code, right? 
+
+[00:03:54] And those two people have different needs, and so sometimes I will break the rules and have different kinds of tests testing the same thing. And I think that that's totally okay. And we'll talk about the one in the middle when I get to the slide for that. Like I said unit test smallest possible testing get away with and we get back what we expected, that's a joke. 
+
+[00:04:16] That's the only pun that I'll be making today intentionally there was mark the time. And there we go. Then on the other end of spectrum there are end-to-end tests. And I mean real end-to-end tests, like true end-to-end tests, right? Testing everything from like the backend to auth the whole soup to nuts, kicking the tires on your application. 
+
+[00:04:43] These are great, these are wonderful, I have never seen these in the wild, right? Because there's a lot of infrastructure, and particularly on the front-end team, you probably don't control a lot of it, right? So for instance, to have a true end-to-end test, you need the ability to spin up a brand new user with a certain settings whether or not they are pro user and have a credit card and their whatever. 
+
+[00:05:09] And then tear down that user, right, and get everything back exactly the way that it was, right? There's lots of reasons why you don't have this. When I worked at certain company that sent emails, what we had was a pool of test users. So only one test runner can be running at a time because if two tried to use the same user they would both fail and probably leave that user in an unknown state and then your tests would just break for perpetuity, right, not great. 
+
+[00:05:41] A lot of times you can't really test truly against production because especially when I worked for a public company things that like made the data not real, were bad, right? So there's all sorts of reasons why true spin up a brand new database end-to-end doesn't exist. A lot of times even on a large enough company spinning up everything on the fly is not a thing that you can do, right? 
+
+[00:06:09] And if you can, we aspire to do it at Temporal, but we can get away with stuff open source we own the server so on and so forth, right? We still don't have it, but we are aspiring to do it. But generally speaking, this is the ideal. 
+
+[00:06:21] But also you can imagine these are expensive and they are slow. So they come with some stuff in the middle. Then we have the word integration tests. This is the most hand wavy definition that we're gonna talk about today. Integration tests is like one or more units, right? 
+
+[00:06:40] Which is like almost everything, right, after the various put two things in a function, look at the return result, right? We're going use this to refer to our spinning up Paywright or Cypress. Something that's kicking the tires on our app in the browser, even if we have to mock out some of the APIs or something along those lines and kind of have it work in there. 
+
+[00:07:08] We're gonna call those integration tests because they are testing to see if all of our components, when we slapped them all together in that UI, do they all act together nicely the way that they should? Is that truly an integration test, I guess? Are some of our unit test maybe technically integration tests? 
+
+[00:07:24] Sure, I don't care. That's gonna be the term we use, cuz I believe in my experience that is generally are at least as Frontend engineers are agreed upon terms. I'm sure that someone will grab a time machine from the early 80s and tell me that I'm wrong, I don't care. 
+
+[00:07:44] Lastly, component test, which is a totally made up term, which is those tests somewhere in the middle. Don't visit an entire page, but maybe you grab me that accordion and we open and close it a few times. Maybe we fill in some fields on that form of just that form component and see if the button is enabled or disabled, right? 
+
+[00:08:03] These are somewhere in the middle of our very small unit tests for utilities or just JavaScript functions and our browser-based ones. These live kind of in the middle. They are faster than spinning up Playwright, but don't give you the same amount of confidence as literally just visiting the page, stuff along those lines. 
+
+[00:08:23] As we know, CSS is a thing, right? And the box model is a thing. And how a component operates when you render it in isolation is different than when you put it in a flex box or something along those lines, right? And so you these are a healthy trade-off. 
+
+[00:08:43] And on any given application, you can dial in how you feel about this. I've seen applications where it's a lot of component tests. I've seen applications where prior to testing library, we installed enzyme, we installed it. There is probably a component test in there somewhere, right? You can kind of choose your own adventure with this, it's about, what works for you and your team. 
+
+[00:09:08] My job is to kind of at least show you how to set these things up, kind of take you through the paces of, what's effective where, what helps deal with what you wanna do, so on and so forth. And sometimes how can we abuse some of these tools to get test coverage when we don't have any, right? 
+
+[00:09:28] Maybe that's a Playwright test that exercises your entire application. Cool, at least he got that. Maybe it's like, hey, you know that function that nobody really knows what it does and has no test we just know that we don't want it to change? Maybe that's a place for snapshot tests despite what you read on the internet about how snapshot tests are bad, right? 
+
+[00:09:47] I don't know how it gets these outputs, but just throw a bunch of stuff in it and verify that it didn't change, right? Like I copy and pasted a bunch of API responses into a JSON file, shove them all in and make sure what comes out the other end is the same. 
+
+[00:10:01] That's in a messy code base, somtimes you got to do what you gotta do.
+
+---
+
+# 5. Setup Unit Testing with Vitest
+
+[00:00:00] >> With that said, we could start from the playwright test and work our way down. It seems like just for our own happiness, that we'll kinda start at the bottom with unit test and work our way up. Again, we'll talk about unit testing. We're not gonna go all the way into the weeds. 
+
+[00:00:17] We're not gonna do the thing where are like, let's write our own testing framework. We're gonna kinda like run a few simple ones to make sure that everyone's setup works and that we're all on the same page with, like, Vitest and stuff like that. And then we'll kind of talk about some of the more advanced techniques that have been helpful to me when refactoring code. 
+
+[00:00:37] And then use that as our first foray into building up a build process that runs the aforementioned tests, and make sure everything works the way that we think it does. If you have never seen a unit test before, or you just wanna make sure that we're on the same page, this is a pretty good example. 
+
+[00:00:58] We have a completely worthless function called add. It takes two arguments and it uses the plus sign, there's probably a lot more tests that we would have to write because JavaScript as you know, two plus two equals two. The string one plus one equals eleven. I don't even remember what happens in the other way, because I don't have to, because I use TypeScript and I know that a and b will be numbers and I know that it will return a number. 
+
+[00:01:24] So an entire set of tests that I don't have to write anymore. But I can have this ridiculous one down here, which is it should correctly add two numbers. Clearly there's nothing checking for typos. But we have an expect statement that exercises the function, and then we verify that it is the answer that we expect. 
+
+[00:01:47] You could use assert. There are various different ways to expect or assert that things are what you think they are. They don't really matter that much, whichever one makes you happiest. I liked to assert for longest time, but I lost that war because nobody agrees with me. An assertion is just basically, or expectation is like, hey, I'm expecting this if it's not, throw an error. 
+
+[00:02:09] All, and I'm gonna repeat this about three more times over our time together, all a test runner does is runs your code. An assert or an expectation or expect throws an error if it's not what you expect. All the test does is collect those errors and tell you about them at the end, instead of blowing up after the first one. 
+
+[00:02:29] That's all a unit test runner is. You could write on yourself, you shouldn't, you could. Test is just making the code do things like I said, the test runner keeps track of it all. A test suite is just a pretentious way to refer to a JavaScript file with a bunch of tests in it that runs through it all and will know. 
+
+[00:02:49] Awesome. So what we're gonna do now is we're gonna go and we're gonna just, run some tests and see some and just look at the tool that we're gonna be using for both unit testing and component testing. One if you've never used Vitest test or even Jest before, maybe you're using Mocha, just to make sure that, we're all on the same wavelength. 
+
+[00:03:10] We'll go take a look at the tests and run some and give it a sense. If you try to run just a testing note on the repo. If you try to run npm test from at very top level, it will yell at you. You just need to go into one of the examples and run it from there, and it should be good to go. 
+
+[00:03:32] So make sure you navigate into source examples, getting started and try out both npm test and npx vitest, which you can totally run from the top level just don't. And one what I would love in this quote unquote exercise is, if it's not working for you, we should deal with that now. 
+
+[00:03:54] Otherwise it gonna be a long day. So we'll take a look at that, but gonna run the tests and we'll take a look at a few of them and we'll talk about them. But let's make sure everything works before we get in too deep. So the question was, am I gonna use Happy DOM with vitest? 
+
+[00:04:10] So let me start by answering what Happy DOM is. Your tests run in Node, right? Things that Node does not have, a window object, a document object, anything that is in the browser, right? It's just running JavaScript. Happy DOM and it's older sibling, JSDOM are basically spec compliant implementations of the DOM API in Node. 
+
+[00:04:39] So then you can go document.body and you can deal with DOM nodes and stuff along those lines. And it will all just work even though you don't have a real DOM. And Happy DOM is a fast lightway, way of dealing with that. The origin story, for those of you who care, is I started out using HappyDOM, and then I had one edge case where Happy DOM didn't update whether or not a button was enabled or disabled. 
+
+[00:05:11] And I lost half a day of my life. On a whim, I switched out to JSDOM, and it worked. [LAUGH] So that informed it. I use Happy DOM at work, and I've never had a problem with it but in this workshop, it's gonna be JSDOM but other than one tiny edge case. 
+
+[00:05:26] You can use whichever one makes you happier, that was an unintended pun. But generally speaking, I'm gonna go with JSDOM because of one edge case at bitmain. But like that also informs, that tells you a little bit who I am as a person. All right, so going into source (src) But like spiritually, we'll use a DOM abstraction, just not happy dom for reasons and getting started. 
+
+[00:05:52] And then cool, open that up in code. And I should have just done the entire thing but here we are. And so in here I can run npm test. And it will run my tests right and we'll see everything like this. If this looks like Jest to you because you've used Jest, yes it does look like Jest. 
+
+[00:06:14] One thing to note is that it drops into this watch mode automatically. As soon as you run the tests, you can type in q to leave that or you just hit Ctrl C like everything in the terminal. You can hit h for a bunch of options that we'll kinda talk a little bit about later. 
+
+[00:06:27] But you can rerun all the tests, only the failed tests, snapshots which we'll talk about later. Filter by a file name or filter by a particular test name, if you're just working on one particular thing and you only want that to run. But generally speaking, with out of the box the one major difference between Vitest and Jest is that out of the box, you need to import the various things that you're using. 
+
+[00:06:57] So like describe, expect, test, it so on and so forth. If you hate that or if you are migrating from Jest and you don't wanna do that, you can literally, for your test suite, go in here and say, globals is true. And then all of those will now just be globally available like they are in Jest. 
+
+[00:07:21] Great, if you're migrating, great, if you just don't want to import those things all the time both are totally fine with me. They will be reasons why we have to have them globally available later. Particularly why I bring this up now, is particularly when it comes to like, remember how I said like you can just use like third party extensions that are meant for Jest? 
+
+[00:07:42] Well, there's certain things that they are expecting, unintended pun. But yeah, so if you want them globally available, that's how that works, and you can see it right then and there. Awesome, and so we've got all of this kind of in place. You can see some of these tests. 
+
+[00:07:59] One of the questions that will probably come up is what is the difference between it and test? Nothing. Which one should you use? I don't care. Which one do I use? I would love to tell you that my rule is if it's in a describe block, I use it, and if it's outside, I use test. 
+
+[00:08:17] But that's not even true, if I find myself writing sentences that start with it in the test description then I will use it, and if I find myself hating that, I will use test. They are the same thing, they are no different. Cool, one more thing is like, true to be true, then there's not to be which is does not equal. 
+
+[00:08:43] You can also expect that a test fails right, so this is like opposite day right where this test only passes if it fails. There are reasons why that will come in handy at certain points which I'll say now and then there's entire slides dedicated to this later. But I will say now which is and I said this before, a test passes when it does not fail,right? 
+
+[00:09:11] So if for instance, like you completely commented this out, well, that still fails. That was a bad example. This one, it still passes,right? And because that's under the hood how a test suite works, which is if this is not the case it throws an error, all right. And that's what fails a test, the absence of a failure is passing. 
+
+[00:09:34] There are some times when we get to component testing and browser testing, integration testing, if you will, well that's great because it's like, hey, go find these buttons and click them. If you found them all, do I need to expect anything at the end? I can, but like you found them all versus if that button wasn't on the page or that like div wasn't there or something along those lines and you blew up and failed the test like cool, right? 
+
+[00:10:01] Like sometimes the absence of a failure is all I need for the pass but sometimes we need to fail a test to make sure that they are actually testing the thing that we want or are they just passing by accident. So .fails or throw in a not in there's sometimes it's helpful just to make sure that we don't have a false positive. 
+
+[00:10:21] One of the nice things about Vitest is I don't even have to have a section. We have like a minor section on like edge cases. But I have a section of like, how do you deal with asynchronous code? Like if it returns a promise like it all just works using async await functions living in 2023 or whenever you have the watching this post 2023. 
+
+[00:10:42] Is great because async is not nearly as hard as it was when I was a kid. And so you can use async await functions. The one difference I noticed is that a lot of older testing frameworks would let you put done in here, and then call it when your callback was done to say that the test is completed. 
+
+[00:11:02] Jest doesn't support that, it actually takes a different argument in there. If you really had a bunch of callbacks, you probably wanna give yourself some kind of abstraction like this. That said, I wrote this test for this workshop. This is not a thing that I've ever actually come across in the wild. 
+
+[00:11:18] But I also don't have to deal with old callback code I mostly have promises to work with, Mark. >> Is there a reason to use Vitest over Jest if you're not already using Vite? I know Vitest works better with the ES modules. >> Yeah, that is basically the answer. 
+
+[00:11:37] I would say that my heuristic is like, so for instance, Jest comes built in to create React app, right? Which I understand is no longer the canonical way to install React, but let's not get into that right now. I will use Jest if it's there. I would say that if you're using React app and you're using Jest, that's totally cool. 
+
+[00:11:53] If you're using Vite, it makes sense to use Vitest. They are in only tiny ways different. I think that Vite is faster, right? For us, I work these days. Our marketing site, a bunch of those sites, are using React, but like the core application is in Svelte which uses Vite. 
+
+[00:12:12] So, originally used Jest and I was fighting with common js versus the Es modules but I'm done fighting with that so I migrated it. But that migration also took me 90 minutes, it did not take all that long. So yeah, I would say that there's like, and if you're using like Webpack and you're using Jest already, I think that's totally fine, right? 
+
+[00:12:39] If you're not and you're using Vite well, yeah, having something that integrates the Vite makes more sense, allegedly is faster, but that's always like if that could change next week. There's also runIF and skipIf, which will take some kind of condition and will do what you think it does in those situations. 
+
+[00:13:05] Generally speaking, I would say that these are probably a little bit more useful for the node developers among us who might have to deal with some of the intricacies of running on Windows. Generally speaking, they are here, you might need them one day. I build my application for both a SaaS platform and open source, so like there's a world where maybe I will need one of these one day. 
+
+[00:13:35] They are here for you they are there but generally speaking you probably don't need them. Cool like I said like you'll notice that like it will run basically all the tests in a folder. Out of the box, it is looking for anything with .test.ts. You can change that to .spec, you can change it to whatever you want. 
+
+[00:14:00] You can give it a bunch of pattern matches for include and exclude. I will use that to dramatic effect to skip solutions if I want to or something along those lines or have a different configuration working for the Svelte app. But generally speaking, it will run everything with .test.ts or anything in an __test__ directory. 
+
+[00:14:25] If you want my personal opinion, because you asked or somebody was about to. I think there are two schools of thought. I have one test directory where you put in all your tests that are divorced from the implementation. I am a big fan of whatever that file name is .ts, that file name .test.ts, right? 
+
+[00:14:46] And just immediately having it right next to the same file. I don't want to traverse the file system looking for things. I can't handle that.
+
+---
+
+# 6. Vitest UI
+
+[00:00:00] >> Just a few tasty notes as I kinda begin to get us into the next section. Just in case, you wanna half listen to me while you also type stuff in the terminal, cuz that's great. There's some various options that you can pass to Vitest. If you use an NPM test, you have to do the -- and then the flags to have them pass through, but there are some fun options that you can set. 
+
+[00:00:25] Run will have it not drop into that watch mode, which is useful with some of the different reporters. There's also an HTML reporter and JSON. And other ones, dot is just a lot less on the screen, it's just like little dots that show you that have passed. The other really kind of cool one that I have found myself at first I was like, this is a little bit like kitschy but now I'm into it is if you do --ui, it will spin up an entire like user interface. 
+
+[00:00:57] That shows you entire test suite and will show you what dependencies got pulled in and the code itself and where the failures are. When we talk about the feedback loop, it's great to see it in the terminal. But a lot of times, if you look at my terminal when we go back, I got a lot of room there and some of those errors are big. 
+
+[00:01:22] And so I do have a second monitor when I'm at home, and so having that up there where I can kind of see the tests in real time feedback as I'm hitting save all the time. And having that feedback loop, it makes me way more productive. So actually to I guess answer that question earlier isn't use Vitest over Jest, I don't think has Jest has it, but it's pretty cool. 
+
+[00:01:43] I will show it to you real quick just, npx vitest --ui. And here you can say, it will spit out my variable show me the overall looking at the test. On this case, it'll show me like a visual representation of all of my passing wonderfulness. All the tests pass, you can see a module graph, there's not much to see in this case. 
+
+[00:02:05] Because these are very simple files, you can also just see anything logged to the console. Cuz I don't know about y'all but yes, there's ways to set break points and debug, absolutely. Do you know what I do most of the time? I put a console log in there, and then I scroll up to my terminal looking for it. 
+
+[00:02:25] I put in like, lalalalalala, wow, so I can go command F, find it. This a lot of times is a lot better because I can just see that stuff right here. So big fan, like it a lot, spins up a little server at a ridiculous port number. And let you navigate through all your tests, like kind of rerun them all. 
+
+[00:02:42] It's even got a dark mode if that's your thing. We talked a little bit before about how if your tests pass because they don't fail, right? And one way to handle this particularly, there are certain techniques that make a lot more sense when you're developing the tests, like then when you are actually running them all the time a lot of times. 
+
+[00:03:06] If I'm starting brand new on something right, like some of the first tests that I write, I will delete, right? I will import the thing from the implementation file and write a test that it exists, I don't need that. If any of the other tests pass it probably exists. 
+
+[00:03:24] But there are certain things I'll do in the very beginning to verify that everything works is nobody likes a situation where you've been coding for 45 minutes to find out that you made one fundamental mistake at the beginning, and nothing's been running at all anywhere. So one of the ways you can do this is you can insist that there is at least, some number of assertions that happen in your test file, right? 
+
+[00:03:51] Like be like, hey, I'm expecting a certain number of assertions happen where literally any, right, and then it will blow up if that didn't happen. This is a great way to sanity check, right, because testing is great until you're in that situation where it's not working and your tests are passing, right? 
+
+[00:04:08] That if you're not getting an error message, sometimes, it's very hard to see. So this is an easy way to do a quick sanity check. And I say this, and I call it out specifically because I would love to inspire you to get into the routine of just once or twice when you're writing a new test and it's passing, do a sanity check to make sure that it is in fact, correct. 
+
+[00:04:36] Actually, asserting anything, but whatever's happening is not in some kind of weird conditional, or you're mapping over an empty array and doing an expectation, and that expect is never getting called ever. Don't be like me, I say these from experience.
+
+---
+
+# 7. Unit Testing Exercise
+
+[00:00:00] >> We're gonna go into a different example, I said that the other one was the only pun. I guess this is a second intentional pun, which is just kind of just looking at, just kicking the tires on some of this stuff. Because what is a course on JavaScript, unless you talk about referential equality versus value equality. 
+
+[00:00:28] And in this post, everything's got to be immutable world. We mostly should grok this, but it feels like the responsible thing to do to at least talk about this briefly. And we'll check out great-expectations. Cool, and there are a bunch of various different exercises that we'll play around with in here, but we're gonna look at object tests in this case. 
+
+[00:00:55] I'm just gonna close some things at this point. As most of us know that we expect these tests to fail, because two objects that roughly look the same but aren't actually the same object are not equal to each other. If you did object.is or you did a triple equal sign between two arrays with the same items in it, they are not equal. 
+
+[00:01:16] Two objects with the same keys and values are not equal. I should choose a better word that is not just the same thing, because down here, you can see that toEqual does a shallow check, right? So they are shallowly equal, which all is shallow. The quality check does is like iterate through the array, or the first thing in both arrays, the same thing, second thing, so on and so forth, right? 
+
+[00:01:41] Do they have the same number of things, the same keys and same values, right? Cuz otherwise, writing these tests would be terrible, right? And so one of the things to catch yourself on, particularly if you have a failing test, is did you actually get the thing that you mostly wanted, but it's just not the same memory address? 
+
+[00:02:03] In RAM, cool, then you want toEqual. And there's a lot of nuances to toEqual, and I bring this up, particularly when it comes to adding tests for legacy code, right? And there's a bunch of tricks that you can do with this that make it way easier, particularly in one of the code. 
+
+[00:02:25] So I work on the objects that have to do with are gigantic, and I don't have time to create the entire object, particularly in TypeScript, gets all angry. So we'll look at some of those tricks. But roughly speaking, if you're just trying to make sure that the various outputs are the same, you want toEqual instead of to be otherwise, it won't work. 
+
+[00:02:47] This is like if you've come from a library that uses assert, or the one built into node, I believe there is assert.equal, which will fail, cuz that does the equality check, but then deepEqual will do what toEqual does. That's why we're having this discussion, right? Every test framework is a little bit different, Phil. 
+
+[00:03:05] >> So is toBe, essentially triple equals and toEqual, essentially double equals? >> The first part of that sentence is totally true. >> Okay. >> The second part is imagine iterating over the array, right? Even double equals two arrays that have the same things will still not be true. 
+
+[00:03:23] A string of 1 and a number 1 will be true, which is the worst case scenario. It's like if you started to go for each on both arrays, compare the indexes of each one. The only one that I couldn't come up with a clever way to do is if you are creating two functions, you're gonna have to find something else. 
+
+[00:03:39] Unless someone on the chat wants to come up with a better way to do this one but like also not something comes up in reality too often. But you can see referentially, this is the same function, toBe will pass by stored in a variable, but that's really a fake test. 
+
+[00:03:54] But generally speaking, we have toEqual, and we'll look at one of the powers of toEqual, which is like there are ways. And we'll see this in a second, I'm just kinda building expectation, unintentional pun. To say, I only care about two properties of this object, whatever that other thing is, as long as it's some kinda string or literally anything, I literally only care about two or three properties. 
+
+[00:04:17] And make sure that this result, which might have 72 different properties, I only care about a few of these, and you can use toEqual to get a little bit more nuanced. So if you find yourself accessing a bunch of properties and writing 42 different expectations, there might be a better way for you, and we'll talk about that in a second or two. 
+
+[00:04:38] But let's jump in a little bit. What I want you to do at this point is take a look at exercise, where I've got, there is a list, I think I have it in the notes in the repo of every different expectation. You can also go to the docs here and you can see all of them. 
+
+[00:05:07] I picked the greatest hits, right? These are the ones that when I did a Cmd+F in my own repo, I had way more than the other ones. So we'll kinda just take them for a spin real quick and make sure that everything works. So what you wanna do is you'll notice we have these annotations here. 
+
+[00:05:26] Dot it or it.todo, it.skip are basically the same, it's a semantic meaning, right? Skip is like, I don't wanna run this test, right? A thing that I might choose to do when we get to some of the things that might happen later in this workshop is I might have a rule that says, hey, don't ship a .skip to production, or I guess your test suite, don't merge it into main. 
+
+[00:05:55] Yeah, I think older frameworks are worse about this, accidentally open up a PR with a .only. Your tests pass cuz only one of them was running. And so .todo is more like I will eventually write this test, right? A lot of times, I will write a bunch of .todos if I am feeling extra in the mood to do test-driven development. 
+
+[00:06:19] I will write all the different things that could possibly happen with .todos, I'll just knock them off one at a time. So in this case, this test suite passes. You know why it passes? Cuz it doesn't fail, right? Because these are all marked as todo, and the lack of failure is technically a passing. 
+
+[00:06:38] So what I want to inspire you to do is start turning off the .todos and see what happens. As you can see, some of these, you got to actually write the implementation. That's why that expect.hasAssertions is here. Cuz otherwise, you would just take off the .todo and the test would pass victory mode, except you didn't do anything, right? 
+
+[00:07:00] So you can delete this line once you have a real expectation in there, right? Or we can keep it cuz it's not bothering anyone. But yeah, you wanna start knocking these off and just try to do the implementation real quick, and then we'll talk about it together in a little bit.
+
+---
+
+# 8. Unit Testing Solution
+
+[00:00:00] >> Let's learn some things about JavaScript, shall we? So we can do an npm test in here. Might even spell it correctly. And you can see that it runs all the tests. One pro tip is if you just one of the one that's entitled like exercise, right? I can do either npm test and I can do exercise and it'll just do a partial file match. 
+
+[00:00:25] So now, you can see anyone's word exercise in there will work. And then the ones that don't have that won't run. I could write exercise.ts, whatever. It all happens. The other option is hit H, and then I can do it by file name, so on and so forth. 
+
+[00:00:41] We'll look at some other ways to find just the test that you're looking for as well, but that's enough to get us started at this point. So let's mark this first one as active and we'll hit save and our tests have run. And you can see that it breaks. 
+
+[00:01:01] Why does it break? Cuz JavaScript doesn't have the concept of anything that's not afloat. So as we all know, 0.2 + 0.1 obviously equals 0.3, a bunch of 0s, and then a 4, right? Part of the subtext for some of this is, we all know what happens when your tests get flaky, right? 
+
+[00:01:30] You stop writing them and then you turn them off, right? So some step one is to get to the point where you're not turning your tests off because it's hard to up the test coverage if you're constantly turning them off. So kind of, then the answer is kinda hidden in this list up here. 
+
+[00:01:51] I'm gonna guess that has toBeCloseTo. ToBe, CloseTo, cool. And that is roughly looking for a certain amount of precision. If you hover over it, IntelliSense tells us that it also will take a certain number of digits in which you wish for it to be close to. So for instance, I might choose 2 if I was doing money, hypothetically, right? 
+
+[00:02:27] In this case, as an example, I don't really care. The one thing that I don't know if I noticed until just right now, is if you look at the VI., the type is a JestAssertion. Again, once again showing that everything we're doing in vitest, if you love Jest, that works too. 
+
+[00:02:45] And it'll do the thing, cool. So we'll save this one and look it up here. If we need to see if something is an instance of a particular class cuz if we look at createPerson, all that really does is instantiate a new person class or constructor rather, depending on, that's where I accidentally tell you how old I am. 
+
+[00:03:10] And so we can do expect this person toBeInstanceOf(Person), right? Anything that has that as a constructor in the prototype chain will pass in that case as well. This will be somewhat useful to us, momentarily. Great, and then we have the describe block. What does the describe block do? 
+
+[00:03:36] It basically, if you looked in that UI before, it organizes your test. So it indents them and puts them all together. You can skip a whole bunch, or you can todo a whole bunch, or you can only a whole bunch. It's just a way of organizing your tests. 
+
+[00:03:49] Do you need to do a describe block? You do not. If you just wanna write it or tests at the top level, what Jest and vitest do is they just wrap that all in a describe, right? A file is effectively wrapped in a suite, but then you can nest these as much as you want. 
+
+[00:04:06] You shouldn't, but you could, and they will share any kinda hooks that we'll see in a little bit as well. Cool, and so in this case, we wanna see it should include a Backlog in one of its many statuses, right? And so in this case, we can do expect(board).toContain. 
+
+[00:04:41] The word Backlog, right, and this is effectively doing Backlog. >> Is there not toInclude? >> In this case, it is toContain, but after the board.statuses, let's find out together. I know it's toContain, which I will never at this point in my life remember strings have a .contain and arrays have a .include, or vice-versa. 
+
+[00:05:20] So strings have a includes and arrays have a contains, so, >> I don't know if there's a contain at all. >> That's includes, I don't know. It's the test assertion is toContain. We could also do the opposite of that, which is we can assert that it does not have that thing in it, right? 
+
+[00:05:50] Or not toContain. Cool, as you can see, we're kinda passing as we go through, but I did need to unblock that one. Sweet, you'll see the number that says todo here, right? That's a great way to get a sanity check on whether or not you are actually whittling down that list. 
+
+[00:06:12] And that is different than them being skipped per se, only in a nomenclature way, right? It's the same thing, but it's a way for you to keep track. Cool, and now we get a little more detailed here, which is we should be able to add something, add a status to the board and then see this there as well. 
+
+[00:06:33] And so we could say something like, we'll get rid of this for a second. And we'll say board.addStatus and we'll say, what are we looking for? Verifying, pick whatever you want. And then we can expect that if we call that addStatus, then it should be in there. And you'll see that one of the things that I'm doing here, if you don't spell it right cuz you're talking and coding at the same time, you have issues as well. 
+
+[00:07:15] It's kinda common pattern for tests, which is kinda a setup. The exercise, and then we can kind of verify, right? And so you kinda break it into these three phases as well. Can you use a before each to create this board? You can. I choose not to because, you know what I don't need in my tests? 
+
+[00:07:37] Things to be abstracted and clever. I just wanna see what's going on. When my test is failing, I'm not in the mood to like scroll up and look to see where that thing was populated. You think everything's gonna reuse the same object and then you find out very quickly that now you actually need different ones in some cases. 
+
+[00:07:54] Cool, and so we can go ahead and we can also remove one as well. And this will be the same basic idea in this case, right? So we can say board.removeStatus and we'll say Backlog, and then we should expect. Now, this one's an interesting one cuz I might choose to do this one in two steps, right? 
+
+[00:08:17] Cuz if I remove one that's not there, it could still pass, right, if I mess this up. So this one, I might choose to write two sets of expectations. One that it's there and then that it's not, Mark? >> If addStatus was an async call to the server, would the test look similar to this? 
+
+[00:08:39] >> I'm gonna answer that question now and we'll talk about this and this will kinda help us skip a section later. So the question was, if addStatus was asynchronous, what would happen, right? And it all depends right, in this particular test, it would fail because we run a function from top to bottom in JavaScript before we check the event loop. 
+
+[00:09:10] So here we would add it and then we would have thought that was in there and it wouldn't be in there yet, right? That said, if for instance, whereas this gets a little bit more problematic would be this test here, right, which is, it's a lot harder. If it wasn't in there, you get to some weird edge cases, right, because this wouldn't have happened yet. 
+
+[00:09:35] If things do return a promise, which is very easy in the modern era to simulate, boom, now it's an asynchronous function that returns a promise. RemoveStatus, And we can say not toContain Backlog. Cool, and then so this one passes. Did I save that file? Async move statuses. Cuz it's modifying the object. 
+
+[00:10:11] If I was waiting for a return value, this wouldn't happen. Because it's a class, it just happens to work. But you could see a word where it's like, if there's a function return value, we wouldn't have it yet. And this is where it can become somewhat tricky. If you need to deal with the fact that you need the actual function to get called and fully resolved first, that is relatively straightforward. 
+
+[00:10:34] You can just make it an async function and await it, right? And so, it depends, the problem here is that if I misspelled this one, It also still passes even though it shouldn't, right? And this is where you might choose to make a test fail to make sure you're getting what you want. 
+
+[00:10:59] If you ever have any suspicion, particularly when you're dealing with asynchronous things, because again, the absence of a failure is technically passing, right? And this can bite you in fun and unexpected ways. >> Because maybe Backlog F was never there to begin with? >> Yeah, and so it's passing cuz it works, you know what I mean? 
+
+[00:11:21] It's true, and this is why sometimes you would want to either make your tests fail or to say toContain or something along those lines to at least get the feedback loop that you're not- >> To expect in that same plan. >> Yeah, I might expect that it's in there first and then expect that it's not. 
+
+[00:11:38] And there are other ways you can structure this as well, right? Here, I've made a, this would catch it, right, cuz it's not in there. However, still subtly broken but passing, right? And my recommendation for how to solve that would be to just take yourself out of the equation as much as you can and just store it in a variable, which is cool. 
+
+[00:12:11] We have a status because spelling a variable name wrong will blow up in your face. We'll expect that it's in there, remove it, and then expect that that same one is not in there. And this is going to make you a lot happier as a person because now your test will not accidently pass because of some reason in this case, yeah. 
+
+[00:12:33] >> It's all the same one time so we can assume you'd almost wanna set that more higher up globally if you're gonna use it for multiple tests in the same suite? >> Maybe, maybe, right? Could I do it before each or even if it was, and then reset it? 
+
+[00:12:49] Yes, and we'll see how to do that, but then it's tricky because now, I'm not very smart. And if I don't see it in my very large font editor right now, it becomes tricky as I have to scroll up to verify the thing is what I wanna have. For a lot of times, like the whole do not repeat yourself kinda thing, I think is true for the actual implementation of writing software. 
+
+[00:13:16] Sometimes for my test, I would rather repeat myself. It have to be incredibly explicit, particularly when I'm refactoring code and I didn't expect a test to break. My patience is way lower than if I'm writing a feature for the very first time. And so in those cases a lot of times, I will choose to repeat myself. 
+
+[00:13:36] Cuz then all of a sudden, you set one, but you need this one to actually be a little bit different and it just gets confusing. But then there are some times where it's, if it is a lot of work each time, then yeah, you can do it before each or something along those lines. 
+
+[00:13:46] It is kind of defer to your judgment, in this case.
+
+---
+
+# 9. Async & Asymmetric Tests
+
+[00:00:00] >> Just to kinda show, I will use this half done asynchronous function to just talk about some of the edge cases are on async. We'll kind of live code for a second instead of going into that whole exercise cuz we're here. So in this case, right, it does modify. 
+
+[00:00:18] Even though it's technically an asynchronous function, this line does run synchronously, it's mostly the return value. Splice, what does splice give me these days? It will give me, let's see. Let's actually just have it return, The number four just to make my point. Cool, and so if I say const, Return value, And in this case, we'll say, cool, expect that. 
+
+[00:00:55] And then also expect, That its return value, To be 4. This one will break cuz we've got a promise which hasn't resolved yet because we run this code, that returns a promise that hasn't resolved. Next tick of the event loop, it will finally resolve and we'll have it cuz there's no network call, it's just a promise, it's a job execute technically. 
+
+[00:01:23] And so this is now the promise which is, the promise is not 4. I have a few different ways that I can deal with this and we'll talk about some of the differences between them. One, the most common one, Is, I can just await it and then we'll pause right there, we'll do other stuff. 
+
+[00:01:45] We'll pause, we'll wait for it. Now, return value is in fact 4 and my test passes, cool. The other thing that we can do is, I can say that this promise resolves to be 4, right? Really, the time that I would choose to use this, I probably just await it most of the time, where I would choose to use this is not necessarily resolves to, but cuz resolved await works just fine, its cousin, reject, is the more interesting one, right? 
+
+[00:02:24] Because in an async await function, this will throw an error. And there are ways to check to see if something throws an error, but then trying to catch it and make the expectation, but if you didn't make the expectation cuz you didn't catch the error, then the test passes, right? 
+
+[00:02:38] That's when I would choose to purposely say, hey, this promise should reject to be this error, this value. Usually with the unhappy path is where I'll use resolves and rejects. For resolves, I'll usually just use async await, but trying to do a try-catch in your test, that's a lot of logic. 
+
+[00:02:58] All of a sudden you never wanna get your test to get to the point where we have so much abstraction, you're so clever that you need tests for your tests. All right, like cue an Xzibit meme, right now I heard you like tests so I put tests in your tests, right, you don't want that in your life. 
+
+[00:03:11] So a lot of times being overly simple and repeating yourself versus being clever, cuz if you get too abstract, who tests the tests, right? So yeah, the only time I would use that one really is if it does in fact throw. And there's an asynchronous folder in here that we might visit, which will kind of show you some of this as well. 
+
+[00:03:34] You can expect it to be, you can reject it in this case. This one will throw. Or I'll just reject it, but you can actually see that it does the thing you want. Also if you throw inside a promise that technically rejects it, so on and so forth. 
+
+[00:03:50] But most of the time, I would just await it. And the nice part is you saw when I didn't await it, there was expected 4, received promise. Pretty clear what the issue was, right? Not particularly versus callbacks where you were just kinda bewildered. [LAUGH] I don't know why it's undefined. 
+
+[00:04:11] Cuz I didn't put done somewhere in there or something along those lines. So the modern era is great. JavaScript is wonderful, everything is good. >> Earlier, you mentioned comparing objects where we only cared about a few of the fields. I think we kinda went over this, but how would you go about testing to identify an object based on incomplete information or just a few fields? 
+
+[00:04:36] >> So, yeah, the question was basically, if I only care about a few properties of an object, let's say I've got some objects that I work with which are gigantic, and maybe I only care about the type field on it or something, or does it have these two or three properties, and I don't care about the rest of the ceremony. 
+
+[00:04:58] And then I find myself bringing in these giant JSON representations of what I'm expecting only to see two fields that change. You have two options, and it really depends on what you're going for. One of them is super simple, it's called toMatchObject and might as well also talk about its sibling to match, which works with strings and regexs, which will make sure that it's. 
+
+[00:05:26] So if you don't actually care about the casing, you could do a case insensitive regex. That's usually really helpful for a lot of things, particularly when we're doing component testing. But to answer your question, we've got toMatchObject, which basically takes a subset of that and checks to see if that subset. 
+
+[00:05:45] So here if you look at the example in here, we have the John invoice where the customer in there has got all of the details, and then John details is also that roughly the same object, right? So you can see does the invoice have the customer field and does that kinda matching just on that and we don't care about the rest. 
+
+[00:06:03] There can be more nuanced ways where we're somewhere in the middle, where maybe we don't care about everything, but we care about some things, right? And for instance, to kind of that half joke that I made earlier, if you find yourself stubbing and mocking your own code, you probably should take a moment go for a walk and think about it. 
+
+[00:06:28] But places where that might be the case which is if there's any kind of random ID or UUID generated, right, either you have to choose to not care about that, right, that field, or, right, you can mock it or stub it, right? But there's a middle ground in the middle, which is completely not caring or not caring in a different way by overriding it, right? 
+
+[00:06:55] But okay, the property should be there and it should be a string. Could you do that by hand? Does TypeScript help? Absolutely, but I think I'm always shocked and maybe you all are smarter, so maybe you've all seen this before, but I'm always shocked to see how many people don't know about this. 
+
+[00:07:12] So it feels worthy to include is this idea of what we call asymmetric matching, right? And asymmetric matching, if we actually look in the docs here, we can kinda see it towards the bottom which are these ones here which is they're not necessarily after you have the value. 
+
+[00:07:31] But they are like, expect anything which is there should be a value. Any is a given type here, let's click on that one, which is cool. Yeah, generate ID could be a unique value, it could be random, it could be different every time, so good luck testing that. 
+
+[00:07:48] But if you wanna make sure that we get an object where the property has an ID and the value is, as long as it's a number, I'm good. That way you don't have to mock it out. You don't have to do a whole set of weird expectations. You're saying, hey, I'm expecting an object that has an ID and any number, right? 
+
+[00:08:11] I don't care, it should be a number. And then maybe you'd have the rest of the property. So it's like really maybe it's a person, and you care about the first name and the last name are what you put in, but that ID is randomly generated, and you don't want that breaking your tests, and you do wanna make sure it's a number. 
+
+[00:08:26] Could you write this with enough expectations of, expect first name to be blah, expect last name to be blah, blah, expect type of ID to be number? Could you do this, but this is a lot easier, to just define those properties and have an object the way you thought it should be? 
+
+[00:08:47] And it's got some friends, which is object containing, which is cool, we wanna have an array, and for instance, there should be an object that contains name. This is kind of that partial matching that you were asking before with toMatchObject. There's ways to do this, it definitely should be an array. 
+
+[00:09:09] It definitely should have an object, one object in it, and that object should just contain this property, I don't care about the rest, right? And it lets you kind of be very specific about the things you care about without one, getting to this tedious, cuz yeah, writing this test is not providing you a lot of value. 
+
+[00:09:24] You know what you're gonna do? You're not gonna write it at all, right? Or if it's flaky, you're gonna delete it, right? And so, sometimes it's about getting very specific and very clear on what exactly you care about and what gives you the confidence. When we talk about code coverage, for instance, I don't care about the number. 
+
+[00:09:40] It's like, do you feel weird when you have to change this? If you wanted to bump a dependency or package json, do you feel comfortable? That's what we're going for rather than 100% code coverage, you get a trophy. And so, writing your tests where it's cool, it is checking everything I care and it's not getting flaky and it's not getting weird about the stuff I don't care about, and I'm keeping the test, provides more value than either not having the test cuz you're gonna get tired, right? 
+
+[00:10:06] There's a human nature aspect here. So how do we balance that with reality and begin to deal with it? Cool, let's just glance at the asymmetric stuff one more time and make sure I didn't miss anything cuz with the really great questions, we kind of off roaded it for a little bit. 
+
+[00:10:23] So let's just kinda look at these real quick. This is an anti-pattern. This one passes, even though it should fail, right? It passes before it fails, you know what I mean? We run through the function. This is put on the event loop a second later, but the function's already done, we've moved on with our lives when this expectation fails, right? 
+
+[00:10:46] So that when we could have a promise that resolves, we could fake time even later on we'll see. There's a whole bunch of ways to deal with this. But know that this is a really great way to make this test fail and then see if at least the error message roughly looks legit to you, right? 
+
+[00:11:06] Another way to do it is to make sure that there were assertions at some point or another. In this case, this will pass cuz we got zero assertions, right, and you go, cool. And this one will purposely fail cuz it doesn't have any assertions. So in this case, if it is a callback, you can wrap it in a promise that resolves or there's various things that you can do in this case. 
+
+[00:11:35] There's a way in if I test in Jest to basically move time forward until all scheduled timers are done, that would also do the trick. We'll see that a little bit later, the second half of this, but just to be aware of that, again, you should treat your passing tests with a certain amount of suspicion if you have a weird feeling in your stomach that it shouldn't have passed. 
+
+[00:12:00] There's nothing worse than the like, it worked, and you don't know why. It's worse than it breaking and you don't know why. Cool, but yeah, generally speaking if you live in a promise based world like I do, you can either just await it or use resolves. I don't have to deal with that many call backs in my life anymore. 
+
+[00:12:20] The modern era, like I said, is wonderful.
+
+---
+
+# 10. Asymmetric Matching Exercise
+
+[00:00:00] >> We're gonna do an exercise and that one is inside of I believe great expectations. There's some bonuses and some other like fun stuff that you can see if you want to see an example of me using the various. So here I'll create a bunch of people. This has a uniquely generated ID. 
+
+[00:00:23] It's like a bonus in here, but you can see that I can either do it all one by one, or I can be like, listen, I want the string to start with CS dash, and that's what my generator should do. I don't actually care about any of the rest of this, but they should be cool. 
+
+[00:00:41] Or I can say it's just a object containing list. There is a lot of options of what you can do here, this is kind of a fair example, but what I wanna challenge you with is we have got this little Redux reducer, which will show up various other places before as well, and its using a UUID. 
+
+[00:01:01] So, we could just make sure that the name is the right thing. We have another test to make sure that pact is the right thing for my packing list, right? And just kind of uniquely go and grab each one of those properties and make sure it is what I think it is, however, you would have to add an expectation for each one, right? 
+
+[00:01:24] One of the nice things that you could do is you could theoretically have a test. And again, this is walking that fine line of clever, but I think it's clear, where it's like, cool, I have a copy and paste. Some of my best tests are I took a bug report. 
+
+[00:01:40] Took the problematic thing, made a failing test to make it pass, right? I can be like, hey, here are the properties I don't care about and just do a spread operator and replace those with these expect dot, anything's or anything along those lines. What we wanna do is we wanna get these tests marked to do, to pass, right? 
+
+[00:02:04] And the tricky part here is that we wanna make sure that those randomly generated UUIDs are not breaking our test. So we expect that the object to equal that will fail, right? Because one we don't know the ID yet. And two is different every time so we can't even take the results. 
+
+[00:02:23] So we want as long as ID is a string, that's fine. But I do want the rest of the things that I am and I wanted to prefix the right way and stuff along those lines, but the important thing is if I add a new item to my packing list, it says my iPhone charger I'm expecting that the thing that got added to my Redux store is my phone charger. 
+
+[00:02:45] Right? And if the rules of my application are, it's false by default, I'm expecting as false before what the idea is I don't care. Right? And so, I would play with the asymmetric matches in this case, and to see what is one of the more elegant ways that you can get this off. 
+
+[00:03:03] And again, this is a very simple use case, but if I think about I'll show you some light fixtures from the app that I work on I've got some of these giant JSON blobs, right? toMatchObject or saying for the parts that can be variable time or something along those lines to uniquely say, I don't care about these things, but I do care about everything else is really powerful to having a test suite that you can rely on. 
+
+[00:03:26] Mark. >> Is there any real world example where the set timeout is used and how to identify the anti pattern? >> We'll do a real world one later, but I'll just say right now toast notifications that are supposed to vanish from the DOM after a certain amount of time. 
+
+[00:03:42] Right, other banners, a completed, anything that's, particularly when we get to the DOM, things that appear for a little bit and then vanish a loading indicator, right? There's lots of stuff like that where loading indicator vanishes when the thing is done, but a toast notification, or a banner, or some other thing like that might appear for specifically five seconds and then should be off the page. 
+
+[00:04:10] That's when we have to manipulate time a little bit to, we don't wanna make our test wait. Right? Because then like one, you got to get adjust right. And then two, that your test is waiting, which makes your test slow. So at which point, we'll be like, okay, that banner is only supposed to be there for five seconds. 
+
+[00:04:28] Cool, move time forward five seconds and verify that's not there. So there are cases particularly when we get to the more from the user perspective unless where we're just putting timeouts in our like functions for funsies. Or, if you had a function that was supposed to call a callback, and you wanted to verify it a unit test, I've done it. 
+
+[00:04:54] Right. I have to look a lot of times where I choose to manipulate time in cases where I have a function that does relative time, right? From some specific rules and so it does like the date, subtracted from Date.now() to get the duration, that means my test would change every single time unless I purposely make that first date exactly, so not in the future. 
+
+[00:05:22] So, what I will use is the fake timers in my case to freeze time or set the system clock to a certain current time and then put in something six months back and say like six months ago, and stuff along those lines. So rarely, but it's one of those things which is do you need it often now? 
+
+[00:05:41] Do you need it when you need it absolutely
+
+---
+
+# 11. Asymmetric Matching Solution
+
+[00:00:00] >> There's two things I kinda wanna point out. One, we are testing a Redux reducer. It's a real Redux reducer. It's like coming from one of those, create React, or no, Redux toolkit and slices, right? So one of the things that I feel and my hills that I'm willing to die on, is taking as much of our state management out of our view layer as possible, makes it easy to unit test, right? 
+
+[00:00:29] Whether or not you use Redux or you use Reducer in just regular React function or use that pattern, right, somewhere else as well, all a reducer is, is a function that takes the current state of the word, and a thing that happens and spits out a new state of the word. 
+
+[00:00:47] And because it's a JavaScript function, super easy to unit test, right, without having to mount the component. Hit the button, you might wanna make sure that buttons are disabled and stuff renders appropriately. But what's really nice about it, it's just a JavaScript function. And we can grab it, and we can test it because again, it's just a function, takes two arguments, spits out one argument. 
+
+[00:01:08] So we can go ahead and we can see that for ourselves. And then we can go ahead and look at some of the asymmetrical matchers to show, hey, if somebody adds another field to this object because for reasons, right, disabled, enabled, I don't know what have you. My tests won't break cuz they're expecting a very specific structure. 
+
+[00:01:30] My tests will look at the things that I care about and not look at the things I don't care about. And again, can you do this individual expectations as well? Sure, but a lot of the times, what you're aiming for here, is not necessarily writing less code. It's like getting a better error message when it breaks. 
+
+[00:01:45] Be like, cool, you just saw one thing broke, right, versus across a bunch of tests versus like, cool, this is one object, hey, it got all these things except for this one thing here. You'll get an error message that shows you, the difference in the object. So my first test is in fact already running, let's just do npm test. 
+
+[00:02:04] I'm gonna say item slice, and I'm gonna say .test because I have one called .solution. It's got the answers in it. And so normally, I wouldn't have to put the .test, but because they're similarly named. So one passing 7 todo, all right. Let's go ahead and let's make it, in this case fail, cuz it does not have any assertions, we'll keep that here for now just to make a point. 
+
+[00:02:31] So with reducers, if they get an action they don't know how to deal with, they don't have a case for, nothing happens, right? In this case, if we look at the reducer, not the type, if we look at the reducer, the default state is an empty array, and so it will always return that state as an empty array. 
+
+[00:02:48] Cool, cool, cool. In this case, we are gonna add, and we'll send it an object with the name iPhone. Now, what's super great is, you know what I don't have to do? Write a bunch of tests where I call with the add type, but without something with the right properties of name and iPhone because, you know who's checking that for me? 
+
+[00:03:10] TypeScript is, right? So if I said something like model 14, you can see that I already got a red squiggly line without having a giant set of tests that I used to have to write. I don't have to write any more, and I'm happier for it because again, I like to ship product features confidently, I don't actually like writing tests, right? 
+
+[00:03:32] I just like not feeling really scared whenever we do a deploy, right? Unless it's a change to auth cuz I break auth every single time I touch it. Cool, cool, cool. So we have this, so we can say we can expect the reducer, we haven't got the result in this case, we expect a result, which is that return value, right? 
+
+[00:03:56] And in this case, we can say that, it should equal, Equal an array, cuz we knew that it spits out an array. And honestly, whatever else gets added to this type, maybe there's more features other than just name and packed and then ID, I don't really care, as long as we get an object. 
+
+[00:04:22] So I can say, it should be an array, and we expect an object containing, In this case, name: iPhone. Now we can guess, just by looking at the type, that there is an ID on there and there is a packed value. I say we could all look at the type, but I also wrote the code, so I happen to know that, and that an item is an array. 
+
+[00:04:49] We can go sec, they've got an ID, they've got a packed, so on and so forth. But as long as we had an array of one thing, if I put a second one in here, for instance, that will fail. Because we said an array of one thing, as long as that item, as long as that one thing has the name iPhone, right, other things can change in there. 
+
+[00:05:09] But we are validating that there is exactly one thing in that array, that is safer than popping the first thing off the array, right, cuz it could have been a second thing in there, you didn't test for that. That means that test didn't fail, which means your code didn't work, and your test passed, worst case scenario. 
+
+[00:05:22] Here, we are assuming when we say that it is an array, and that it has exactly one item in it, and as long as an item has a name iPhone, I don't care anything else about it. Yeah, I can be cavalier about this cuz I have TypeScript, then I can assume that this test is probably more resilient than me trying to get clever with things. 
+
+[00:05:42] Again, try to index zero off of it, cuz next thing after you go like, okay, expect results that length to be one, then expect that the first item has a name property, then expect, you know what I mean? In this case, I can kind of say that a lot more succinctly. 
+
+[00:05:58] And then if we scroll up here, right, I kind of get a better, we have that one ObjectContaining with name iPhone, great. And then there was a second object in here, that is a lot clearer for me to read than which one of those assertions broke. 
+
+[00:06:19] Maybe the length one would be helpful, but again for me, this is super clear to be like, hey, there was one I was looking for, and then there was another one, +, +, + above it in red, that shouldn't have been there. Cool, and then we wanna make sure that it prefixes those UUIDs with item in this case, so we'll go ahead and we will, it fails because there's no assertions. 
+
+[00:06:46] Cool, so in this case, we could combine these a little bit. So I'm gonna grab this, And I'm gonna say it's got an id, and that should be, StringContaining. And I'm gonna say that it starts off. That way, I'm getting a little more specificity. And we fail, why do we fail? 
+
+[00:07:17] StringMatching, if I'm gonna use a Regex. Cool, and now it passes. Again, I'm just verifying the parts that I care about, and I can move on with my life, and this test will be resilient, Mark? >> If most state mutations occur on the server and are refetched to update the DOM, does it still make sense to make all of the unit tests async, or is there a better way to test async code faster? 
+
+[00:07:45] >> So if most of the state management is happening on the server, ideally, a lot of this is happening on the server. In this case, this will also come up when we get to mocking and spying, which is insofar that we talk to servers, the majority of the asynchronous things we do are talking to servers. 
+
+[00:08:04] It all depends, if there are things like a transition that should take a certain amount of time, or something along those lines, then sure. But if it's a network request, and it's code that you don't control, then might not have a lot of asynchronous stuff happening in your code, right? 
+
+[00:08:21] This reducer is completely synchronous, for instance. We don't usually for the most part tend to purposely add promises to our code when we don't need to. However, there are certain browser based APIs that return a promise by default and stuff along those lines. So in those cases, then we do need to use async code, but as much as you need, as little as you can get away with, is I think, a decent heuristic for that. 
+
+[00:08:51] But yeah, And these aren't necessarily asynchronous. These are just basically partial matching an object for the parts that we care about so that our tests don't break, cuz something we don't care about changed. Yeah, this one will be roughly the same concept that we saw before, has a packed status of false. 
+
+[00:09:10] I was just gonna show you that you don't necessarily have to do this. If you hate this, and you're like, no, this is not for me, let's look at what it would look like in the other direction, you can see more of the same in the solution. So I could say, expect and grab the first. 
+
+[00:09:31] We can do, expect(result.length), Cuz we wanna make sure this is valid .toBe(1), okay? But whenever you write two assertions, you gotta make sure you write the second one, cuz this test isn't doing what it says on the tin just yet. So then I could expect, so then we could grab, const item = result, expect(item.packed).toBe(false). 
+
+[00:10:16] Now, the reason that I hate this is, cuz if I mess this up in any way shape or form, right, or maybe it starts out with a default set of things all of a sudden, right, this is problematic. Let's say that code broke and it's not actually setting it to false anymore, this test would still pass versus, when I'm just saying, it should be one thing, it should have an object. 
+
+[00:10:39] I don't care about anything else as long as it's got the thing I want, this is one expectation, one error message. Very clear, this can get a little squirrely. For instance, if I make this true, this will probably be pretty clear cuz it's pretty easy. But you can see in a bigger object, it might not be. 
+
+[00:10:57] Supports removing an item, right, in this case, we might wanna verify that does not contain that, right? I could verify in this case that it's an empty array again, that would technically do the trick, but spiritually, not really. So in this case, I could say, expect(result).not. I could use a toContain, or I could actually toEqual an empty array. 
+
+[00:11:30] In this case, I wanna make sure that it does not have, Too much object. Let's say. I'm doing this live at this point, but let's say, real time follow up. Yeah, so this guy is like, hey, as long as it's not any object that contains the id of 1, I don't care about the rest of the details here, right? 
+
+[00:12:15] It just should not have the 1, that I just explicitly removed. This way, if this became a lot bigger and we didn't wanna have this in this test, to the question I was getting earlier, and we wanna just have one maybe larger objects that we're kinda pulling in, and maybe I don't wanna see it in the test. 
+
+[00:12:28] I can be very be like, listen, I just removed this one. I don't really care what's in there as long as it's not the thing I just removed, right? That is effectively spiritually what our code is doing, not anything we might write to get to the same result. 
+
+[00:12:39] Cool, and we can see more of the same basic ideas here, definitely check it out in the solution. In the sake of time, I'm gonna kinda put a pin in there as well, we kinda get the point of, how we can be somewhat flexible. And again, this goes to that architectural question of, how do we have a test suite that doesn't break, right, so that we trust it, right? 
+
+[00:13:01] Cuz even if it's like, you as a human, you get to the point where build breaks. You get to one of those things which is like, you don't necessarily believe it was you anymore, which has already made your test suite worthless, right? And so, sometimes the way that we structure the way we think about these things, it's not about necessarily a number, it's about that gut feeling of, if you find yourself not believing that the build process failed for a real reason. 
+
+[00:13:26] It's like that is the sibling of, I don't feel comfortable changing this code, right? And both of those are like, this is a very technical course, where we're relying on our gut feels as our barometer of success, right? Can I bump that dependency? Can I just run npm-check-updates -u, all wild and just be confident that if my tests pass, I'm good? 
+
+[00:13:54] If the answer to that question is no, then that's where some of these strategies begin to take place. And some of those will be unit tests, some of those will be like, listen, I had a browser go work through the entire application. Touch everything like, yeah, we mocked out the network requests, or something like that, but works, I feel comfortable, right? 
+
+[00:14:16] Great, right? But generally speaking, it's usually a cocktail of both unit tests, as well as these larger tests to make sure that some little thing isn't breaking and the big thing isn't breaking, and that's what gets me to that confidence level in this case.
+
+---
+
+# 12. GitHub Actions
+
+[00:00:00] >> There is going to be a little bit of a choice time here. But if you don't wanna make a choice, you can actually just, I would say fork the repo that we're using, or grab any repo you want that has tests, cuz it really doesn't matter. You can even create React app and just put a test in. 
+
+[00:00:17] This part doesn't matter, but what we're gonna do is look, again, as our segue, we talked a little bit about unit testing. We could go into component testing, we could go into playwright testing, but as a palette cleanser, to talk about something is not testing. We're going to look at kind of setting up our first GitHub Action, right? 
+
+[00:00:38] GitHub Action is basically a CI/CD process that is built into GitHub. If you've ever used anything like Travis CI or CircleCI, or as I joked earlier, if you've ever had the pleasure of using Jenkins, that's a joke, nobody's ever said that and meant it. You've used some amount of CI/CD before, basically, it runs your processes for you and usually breaks your build if something fails, usually your tests. 
+
+[00:01:10] If it's Jenkins, it could be any number of reasons why Jenkins failed. Some of those might have to do with the thing you need to change. Some of it could just be like the way that the moon was in relationship to Saturn. But GitHub Actions, all of this applies to whatever you use, right? 
+
+[00:01:25] GitHub Actions is just being the lowest common denominator, which is, we're gonna push this to GitHub, there is GitHub Actions. You might choose to use GitHub Actions and whatever CI/CD process use mostly because GitHub Actions, this is gonna be a shocker to all of you, integrates really nicely with GitHub, right? 
+
+[00:01:45] And so the very first thing we're gonna do is we're gonna have it run our unit tests. And that is great, and that is something that almost every other CI tool on the planet can do. I mean, any CI tool can do any of this stuff, but the other nice part about GitHub Actions is you can script lots of things in your application, right? 
+
+[00:02:07] So for instance, anything that GitHub has an API for, you can script. And it's super easy cuz a lot of the infrastructures there, they have an API, you could have always done it. But you can do something where it's like, okay, if you do work on an open source codebase and is a first-time contributor, you would have something like automatically greet some, silly but doable, right? 
+
+[00:02:32] More practically, some things we use it for is we have a public repo, which is our open source project, we have a private repo, which is just the SaaS implementation of that. And our SaaS app is a superset of our open source app, which basically we use Svelte's package thing. 
+
+[00:02:54] And we bundle the open source as a package that then the cloud app consumes, which the ability to do user management and stuff. The nice part is when we bumped the npm version in a PR, that will automatically trigger something that automatically bumps the npm version of that inner cloud process. 
+
+[00:03:16] So the act of cutting open source release automatically updates it to cloud rather than prior. Cool, you merged into main, all right, neat, now you do npm publish. Okay, cool, now it's on npm, now go into the other one and update the dependency, open up a PR on that. 
+
+[00:03:33] Cool, get a code review, merge it in. And nobody got time for that, right? And so workflows can signal other workflows and all those things, and you can kinda build these automated systems, other things. One of the things I plan on using for in the next sprint or two, which is we merged our server, our web server, repo into our UI repo, right? 
+
+[00:03:59] Because we bundle it in that server, we release it, it's weird open source stuff. But like we merged them together, now that said, I don't write Go by choice. And what's nice is now I can look at the file path that those files touch and automatically slap the right label on it so that somebody who works on the server can see the pull requests that are for them and the frontend ones can see the pull request. 
+
+[00:04:29] There's lots of GitHubby things above and beyond your tests, that's the most obvious things, that's what we're gonna do first. And we'll do stuff like generating coverage reports, and eventually saving playwright videos and all that kind of crazy stuff. But tests is a really great first thing to do, but you can listen to issue creation, pull requests, or anything like that happens in GitHub. 
+
+[00:04:48] We'll look at the list in a second. You can script and automate a whole bunch of that stuff. And this is kinda I was talking about before we have a hour-long release meeting that every time I seek to shave five minutes off of it every month, right? Until we can get it down to a normal 15-minute stand up, where we happen to cut a release, and just finding those things and being able to script a lot of your process. 
+
+[00:05:07] Again, the automation, people are more willing to not do anything or convince somebody cut them some slack than they are to turn off the build process, right? And I mean, we all got mad at the build process but not to the point where it causes team tension, right? 
+
+[00:05:24] At least we're all mad at the build process, right? And so having a lot of these things built in becomes super powerful in that sense. So with that, the very first thing we're gonna do is we're gonna go ahead and we're going to build it. We're gonna create a workflow that basically runs our test suite. 
+
+[00:05:45] Like I said, any repo that you have will work in this case, but if you don't have one, there are tests in that repo that I've been using the whole time. So that's the thing that you could do. Let's go ahead and let's see what that looks like. 
+
+[00:06:01] All right, so right now, this is just a normal repo, it has no idea that a GitHub workflow exists. All that you truly need to make something to support GitHub workflows is you can have a dot GitHub directory that has a workflows folder in it. That's it, that exists, ideally, there should be a file in there, and empty folders in Git don't do anything. 
+
+[00:06:26] But with that, you could theoretically begin to publish your first workflow. And I'm gonna kind of just go into, if I go into the README, and we can kind of jump into one of the sections. Getting started with GitHub Actions, let's look at what a first workflow might look like. 
+
+[00:06:48] This is possibly, I'm not gonna say the simplest workflow cuz I could have one just echo or something and that would technically work. But this is the smallest useful workflow that you might see. And so this would be in that dot GitHub directory in a workflows' folder that we'll make in a second, don't worry about that. 
+
+[00:07:10] Let's just kinda talk about the component pieces in here, and then we will go ahead and we will put it in our repo and watch it do its thing. So the name, that's pretty straightforward. It's what name do you want to see? And so I might even do Run Unit Tests or something like that. 
+
+[00:07:35] But anyway, the more important part that comes next is what triggers this workflow? Like I said before, you could do it on basically anything, an issue being created a pull request open. There is a long list that I have linked to here as well. You actually are in the repo, these are markdowns renders HTML. 
+
+[00:07:55] Don't worry, and you can just click on it, and we'll take a look at in a second. There is a long list of things, and for those things, there are even nuances to where you can only when an issue is close, or only the PR is a draft. 
+
+[00:08:09] There's all sorts of little things you can do here. But for our very simple first workflow, we've got on, which is what event are we listening for, and we are going to listen to one of two different events. A push to a particular branch, and you can guess which branch it is by squinting and looking at it, or a pull request targeting a particular branch, right? 
+
+[00:08:33] You will notice that the branch in question here is main, right? Is to say that, hey, whenever someone pushes to main, right, which is usually if you've turned on any kind of branch protections means that they've merged the PR into main. Let's run everything one more time, run the tests, why not? 
+
+[00:08:50] Also, whenever somebody opens a pull request against main, the nuance here is that event also triggers when they push to that pull request, right? So all PRs and any commits to those PRs as well as pushes into main itself will trigger this workflow. For testing notes, you can do pattern matching here, so it could be like, if you had a feature branch, right, which is feature dash, it could be anything to a feature branch, right? 
+
+[00:09:18] In fact, I say this particularly cuz I recently got bit by this one, which is in December, we decided not to release anything because we didn't wanna work for the second half of the month. So we made a code freeze branch, I think I called it Long December after the Counting Crows' song, I don't even like the Counting Crows. 
+
+[00:09:46] I don't know if that's why I don't like the Counting Crows upset or even Counting Crows' reference upset. I don't dislike them, I just don't like them, this is absence of a failure as a passing test, right? And so this was set to main, which meant that all of the PRs we opened against the code freeze branch didn't have our CI/CD process run against it, right? 
+
+[00:10:07] Which was a lot of fun when it was time to then merge that branch into main, right? So you could theoretically comma separate, you can do pattern matching, which is feature dash, like a wildcard. I say this cuz I didn't do that, and I suffered the consequences, right? 
+
+[00:10:23] I will leave as an exercise to the viewer slash reader how much of the content of this workshop is things that have bitten me in the last 18 months, right? And so here we got any of those against main, and then we have jobs. Jobs are things that should be done. 
+
+[00:10:41] And this is just the arbitrary name of it, right? build-and-test, right now, it just tests. But you can clearly see I took a bigger one and whittled it down to the smaller version. And then for those jobs, jobs have a few things. There are other things a job can have, but most importantly, what kind of OS is it running on? 
+
+[00:11:05] And then what are the steps in that workflow? On GitHub Actions, depending on how fast you would like things to be, you can run on, just give me an Ubuntu server you have laying around, I'll take it. However, let's say hypothetically we're building electron app, right? Well, you got to build electron app on whatever OS you wanna run that electron on. 
+
+[00:11:28] So you can signify macOS, you can signify Windows. That said, as most of you all know, Mac minis are more expensive than a Linux box, right? And that translates down to how many Linux, generally speaking, choosing Ubuntu is going to have the best network throughput, it's what the Internet is built on, right? 
+
+[00:11:57] You wanna get fancy, and if you need to compile some Windows things or you need to use Xcode, then you got to use that OS, right? But if you don't really care, if you're just trying to take some text JavaScript and make it some smaller text JavaScript, anything will work, so we'll use a ubuntu-latest. 
+
+[00:12:15] There are some other options here, you could have jobs that rely on the completion of another job, but we'll get to that later. Then the most important part are the steps. And really, this actually really well suits all the basic things you can do, which is you can either run what we'll call an action. 
+
+[00:12:34] You can, I say, use an action because the words mean things. You can use an action, which is basically just a different YAML file with different commands in it, or you can run a command. The one nuance here is that, yes, you look like these, look like Bash commands. 
+
+[00:12:54] Fun fact, they are. The one nice part is your workflow actions are either YAML like this, so even when we break stuff down to its own action later on this course, we'll go do it in YAML. The nice part is the other way that you can write an action other than just shell scripts and run is JavaScript. 
+
+[00:13:14] So the nice part about being a JavaScript engineer in 2020, whatever year it is, and so those are kind of the pieces. So we stepped through the steps, and we can kinda see each piece. So this is a prebuilt action that we say uses, right? And so this is already built, and we're just kind of referencing it, which is anything with action slash is usually built by GitHub, right, cuz that is org/repo is really what that is. 
+
+[00:13:43] The same way you might have GitHub.org, or your username slash your repo name. Org/repo, they own actions, check out. Would anyone like to venture a wild guess what action/checkout does? >> Checks out the Git repo. >> Checks out the Git repo, right, which is also known as cloning down, which basically means puts that code base on to this Ubuntu machine that we're running. 
+
+[00:14:11] So generally speaking, pretty common. Now, do you need that one if you're doing like, it's an issue and if they didn't put what environment I wanna auto-comment, be like can you add more detail or something like that, right? Then you don't need to check out the repo for that, you can just use the metadata, who the author was, or what the content of the issue was, so on and so forth. 
+
+[00:14:34] [COUGH] All right, here's a hard post lunch question for y'all. Set up node. Don't all, not everyone at the same time >> Does it install node? >> It does, it does, it does. Of course, it does the actions, and you could literally go to github.com/actions/checkout and you can see that code. 
+
+[00:14:56] As of this moment, I think this is still true, and hopefully, if you're watching this later, may or may not be true. Third party actions or anything you're using from the marketplace has to be a public repo. You can write your own actions and put them in a folder, but in terms of sharing and stuff like that, so all of these are, literally, when I say you can just look up the code, you literally can. 
+
+[00:15:23] And then the other thing that we can do in a GitHub Actions is run shell scripts, or like I said before, JavaScripts. So we'll start at the bottom, npm test, we know that one, we've seen that one before. And so we have that one in place, and the new one was npm ci. 
+
+[00:15:42] Does anyone know what npm ci does? I know that I'm supposed to use it, I don't really know what it does. >> I cheated and read ahead in your notes. >> Yeah, yeah, yeah. So read my notes back to me. >> It's a variation on npm install with a few different caveats. 
+
+[00:15:58] >> Yeah. >> It insists on having a package lock JSON. >> Yeah, yeah, yeah. >> It'll error out instead of updating package lock JSON, if something doesn't match, that seems incredibly useful. >> Yeah. >> It deletes node modules of present, it doesn't write to package JSON, and it'll uninstall all dependencies. 
+
+[00:16:13] >> Yeah, so it'll basically do that thing what we all do, even if it doesn't work, when our slings aren't working, we blow away node modules and reinstall everything, it'll do that. And it won't update it based on letting the little patch version slip and stuff along those lines. 
+
+[00:16:27] So it is basically a version of the npm install, but for CI/CD processes, and then npm test. And we know that if your tests fail, we may not know cuz we didn't talk about it. But we have probably grokked that you get an error code that is not successful, right? 
+
+[00:16:45] And so very much like our tests, if we exit with a zero, everything is good, if you exit with any other number, everything is bad, right? And so the absence of blowing up is a sign that everything is great and that that step passes, right? And honestly, we'll expand on this, we'll add stuff to it over our time together. 
+
+[00:17:09] But this is basically, if you just wanted to run your unit tests, you basically make a dot GitHub folder, I'm saying this on purpose, with a workflows directory. And you just name something dot YAML with this code in it, and you now have your unit test running on every PR to main. 
+
+[00:17:27] Let's do it.
+
+---
+
+# 13. GitHub Actions UI
+
+[00:00:00] >> Like I said, you can grab any repo you have, you can use this one. Tomorrow, I'll have another repo that we'll use and stuff like that. But, you just don't have push access to my repo, so you would have to fully fork it and not just clone it at that point. 
+
+[00:00:16] But I'm going to just make a new branch. Cool, and we can go in here and we'll make a new folder and a hobbyist code. Really doesn't ever want me to put anything on the top level, let's go down here and do it. I could have just created it from the command line as well, but here we are .GitHub. 
+
+[00:00:43] And there's a lot of other things you can do with this directory, you can put like pull request templates and issue templates and all sorts of other fun stuff, code owners. I will say workflows, and let's make a file called unit-test.yml. If someone sees me mistype something, I am not looking at notes or anything I'm just doing this live, other than the fact I'm copying and pasting the entire workflow, sweet. 
+
+[00:01:09] And this is it. All we need to do to configure our CI CD process is open up a PR, right? If this was in main it would run on every PR, we open up a PR, you don't have to do that classic thing which is as you're working on the build system, you're breaking every build, it will only work in that PR until it merges into main. 
+
+[00:01:32] And this is found in the notes in the repo as well, it's under getting started with GitHub Actions. And with that, what I'm gonna do is just do a, I really like the GitHub UI. I'm only gonna commit that unit-test. We'll just kind of push it up. And then we'll open it up, and here, and we can see that we've got a new branch with a PR, Add our very first or your very first, maybe, GitHub Action. 
+
+[00:02:18] Empty, empty pull requests comment. This is the bad part about being the boss is I don't like the template, so I even deleted just open up empty PRs, if it's like update lint tests, I'm like what what do you want me to say? I updated the lints or lint errors, leave me alone. 
+
+[00:02:35] So, you're learning some of my toxic traits. So, one of the things that we can see here is, this is new happening right here, which is run unit-test, that seems familiar. Didn't I just make an action called run unit-tests? I did. It's a build and test and it's failing, and we'll find out why. 
+
+[00:02:56] Cool, cool, cool. Yeah, cuz in this repo running npm test had that error to make you go into a folder. I have two choices. I can literally, and that's at exit one, which is not intentional but I'm really glad that that played out because I was like if it exits anything other than zero, your build process fails, and I literally have a very explicit exit one. 
+
+[00:03:21] And so the build process fails. So, I can make that work. But what's cool about this is you'll notice that, That's not breaking any other pull request that didn't have this would still be fine. That action only runs on this PR because that's where that file is found. 
+
+[00:03:35] Once that gets merged into main, then yeah, other things would fail based on it. But it means I can work on a GitHub workflow without having to mess up anything. So, cool, accidental intentional thing. I am pretty sure that was just helpful so that we're running the right set of tests but I'm pretty sure I can just do an npm test and we'll find out. 
+
+[00:04:03] I think I don't have any intentionally failing tests in there. Cool, gotta go up two levels, maybe three, Npm test. Fun fact if you are talking and coding at the same time, if your npm test is npm test, again, cue some kind of exhibit name. We'll do vitest, there we go. 
+
+[00:04:36] Npm tests and you can see it running through my test suite. Look at that. They all pass, that's good. Now it goes into watch mode. One thing is that vitest out of the box, most CI, CD processes set a CI environment variable. If it is true it will do it in run mode. 
+
+[00:04:55] If you don't trust that you can also choose to do a dash dash run. Cool, and so we will update. Let's at least try to make sure we're good citizens. Update test script and package JSON, right on. And if you use a GitHub UI, you can see that I already have the instant feedback here to know that this was a failing build. 
+
+[00:05:28] Cool, cool, cool. And we'll add our very first GitHub action, you can see it's running. So let's go into details, and it's queued, which means no machine in GitHub's fleet has picked it up yet. Possibly because I did a bad thing earlier. No, that one seems to be running. 
+
+[00:05:56] I didn't push out the infinite loop before. But this gives us a chance to see what the UI looks like in this case. One of the things I will have to do is kick something off and start talking, because some of these things are not instantaneous. This is, if you go into actions in your repo, what you will see, you'll see all the different jobs that you've had. 
+
+[00:06:12] This one is called build and test, for reasons that you can take a lucky guess where we're going with this. You can see the actual workflow file itself, we've seen it. The usage, right? Eventually, we will see stuff like caches. As you can see that as the script is running, you can actually see what you saw in the terminal, kind of like in the UI. 
+
+[00:06:37] So that if it does break, you will see a very similar situation to what you might have seen running on your own machine. And then when it's all good, you can see that you get a little green checkmark. All right, we go back to our PR. And you can see that we got a checkmark here. 
+
+[00:06:56] In fact someone gave it a thumbs up as well. And now all checks have passed, and I can merge it in. Now, there are some things that we might choose to do here, but that was our very first run your unit-test GitHub action, not that hard.
+
+---
+
+# 14. Build Step & Branch Protection Rules
+
+[00:00:00] >> Now, GitHub actions are super powerful. You can do all sorts of crazy stuff like we talked about, but the very first one is super easy. Now, to our point that we can write so many less tests now that we have TypeScript. It would be nice to have TypeScript validate that things were okay too. 
+
+[00:00:19] The easiest way to do that for most setups these days is to just run the build process. Well, there must be why he called it build and test. And so like we can basically try to add another step to this script, right? That also tries to build the application, that will expose any kind of like TypeScript issues as well and will allow us to see that as well. 
+
+[00:00:46] And so we wanna just add another run command to not only do NPM test but then also do like NPM run build, and get that process going as well. So why don't you add that in and then we'll take a look and we'll see it all together? Cuz I'll do it too and kick it off and then we'll view it and play around with it a little bit as well. 
+
+[00:01:10] So the workflow that we had before called build-and-test but it only tested. So our mission was to also make it build. And there's a challenge mode here, which is like a segue into the next thing we'll talk about. But let's just deal with the major piece, which is also built. 
+
+[00:01:31] Now, if you're using my repo and it's live there was like one issue with the type alias that stopped it from building, which is great cuz now I can show you kinda the good and bad. So this is our first one where we had that NPM test script that exited with a one. 
+
+[00:01:48] Then we fixed it and then like build the build did legit fail. So you can kinda see a few things, right? Which is one, it fails, and you can click in. This is in the Actions tab you can also get to it from the PR, where you can see okay, here's where it blew up you can see all the test stuff as well but that all pass, so nothing to look at there. 
+
+[00:02:11] But with the NPM run build, you can see that it did blow up and the kinda cool thing that it will do as well is, where did it go? Here it is, the annotations. And you might have to do some configuration but what's really cool with this is if there are lint warnings now also see that here as well. 
+
+[00:02:36] It will annotate the PR with like, yeah, this didn't break the build but you got a little silly thing here, right? In this case, it's just showing you, because you think a lot of these stack traces have the file name and have the line numbers and stuff like that. 
+
+[00:02:55] So it is able to kind of show you and it included the error code of two. And so I fixed those and then I added them to the commit. So we go back to actions and you can see that it passes at this point, right? You get a sense of what branch it was on, so on and so forth, you can filter, in this case, we're only doing on pull request. 
+
+[00:03:16] You can hear all the different statuses. And I will show you some of the events you can watch for and a little bit as well. The branch, the actor, there is one it is me, cool. So here you can see that in this case it went successfully, which means now I know that hey, this built before merging into main and all the tests pass, right? 
+
+[00:03:39] Great, now nobody has to run it manually, or anything along those lines we now know with confidence that theoretically, you can't merge bad code in the main. The word theoretically is doing all the work in the sense because I totally can, right? In fact, there are no rules in this repo, I can do whatever I want. 
+
+[00:03:59] And as an admin, you can always kinda do whatever you want. But this is why most companies have principal place access, which is at most decent sized companies not even anyone on your team has admin access to your own repo, right? And it's to stop you from doing things like this. 
+
+[00:04:16] Because in a lot of cases there are rules around things you need to do to be compliant to its name is SOC2, is that the one, right? Something, something Enron. So now that there are a lot of safeguards in place to make sure you can't do bad things. 
+
+[00:04:30] So how do we set that up for ourselves? We can kinda go into the Settings and you can also get here. We'll see if in the pull requests to go to Settings, I go to Branches, and I have not protected any of my branches. Most importantly, the main one, the important one. 
+
+[00:04:46] So that's settings and branches. But also I'm pretty sure if you go into the PR, it will also say hey, you can have some rules here, would you like to add a rule? It's very much like you should have some rules. Which brings you to the same page, was the one clicking on main. 
+
+[00:05:07] For most things with GitHub, actually I was going to say GitHub, actually. This is true for most things with GitHub. If it is open source, almost everything is free. If you would like to make stuff private, there's some number of minutes that you get for free, I work at a SaaS company, I don't understand how pricing works, even for the thing I work on. 
+
+[00:05:29] But I also work on open source projects, I don't care. So here, we can do all this stuff, but if you did make this repo private and you don't see the ability to do all this stuff like that's why, that's mostly why I mentioned it. So this is the main branch and again you can do pattern matching here as well. 
+
+[00:05:49] Require pull requests before merging means that you can't push to main. This one is tricky when it's a repo with just you, but you're also an admin and you can bypass that rule anytime you want. So you can do that or do not do it, which is acquires approvals. 
+
+[00:06:07] Cool, all sorts of little rules, generally speaking, I'm not gonna check most of these boxes because I don't want to. Because I'm one person demoing in front of people, but you should probably check. Almost all of these boxes, this one's tricky because I tried this one one time, and I wanna have it like auto-assign the most helpful person, right? 
+
+[00:06:34] But that person has to do it. And you know what you never want is the person who had like code over everything being me. And you never want the manager to have to do a report request review because he's in meetings. [LAUGH] Right, and he's not the best on that, right? 
+
+[00:06:51] And so I had to turn that off. And also we have people work in London, yeah, it's time zones, life is hard. But that one, maybe not. And I'll talk about what you can do to code under stuff in a second. >> For the require approvals one, is that anybody can approve it? 
+
+[00:07:05] Is there a way to set it up so? >> Anyone, I believe what this one has to be with write access to the repo, right? You can change the number to, I think that they have to have- >> So anyone who can push? >> Yeah. >> Okay. >> Yeah, I don't think I could be wrong on that one because- 
+
+[00:07:25] >> I think it's like collaborator. >> Yeah, collaborator. >> It's a permission level, yeah. >> It's not just a Rando, not a Rando. >> So is there a way to change that? >> Not, I don't think you can change the level. >> That's just GitHub setting. >> Yeah. 
+
+[00:07:39] >> Yeah. >> Okay. >> Maybe with enterprise. >> You could use code owners. So all kinda basically the high level. Yeah, it is path name, username and it means that like if you are touching this file, this is really great for a mono repo, we have different teams contributing the same repo. 
+
+[00:07:54] Which just like somebody from this team has to be the one approves it on their part of the codebase, right? And so you can get a little bit more granular with who can do it not just anyone in the org or anyone as collaborator. You can say only the people who are in this file, can do it. 
+
+[00:08:09] Yeah, which again, I'm on the full team is eight people. It was the eight of us, right? So I tried to get very specific, always this file, I worked on this, so I would like it to auto-assign me, but then it couldn't. And you can require a view from the code owners. 
+
+[00:08:28] There's nuances here, but generally speaking, don't let people push to main without somebody else rubber stamping it, require approvals. This is the one we care about, though. Require status checks to pass before merging because what is the point of running the test suite if you're gonna let people merge anyway if it fails? 
+
+[00:08:48] Because then you've just merged failing tests into main and nobody likes the person who does that. This one makes sure that like you've like rebased in main with that as well. And so you've got like the latest version of main that you're based off of it's not like an old version, and so on and so forth. 
+
+[00:09:07] Cool, and you can pick which checks, and hypothetically yep, I have one which is built-and-test, which is run by GitHub actions. And that will say cool, before you can merge into main, this check has to pass, right? Now, admins, not as clever as admins can always override this and lisences a personal repo. 
+
+[00:09:29] I'm setting up a lot of rules that don't apply to me as the only person who can collaborate with this repo. There's some other ones in here, and these are, again, these fall when we talked about that systems, process and then patterns. This comes down to a lot more of the process piece, whether or not you choose to use code owners or something like that, it's like a process. 
+
+[00:09:50] This one, if you've seen like comments can get resolved in the threads, this is say all comments need to have hit the resolve button. So you can't be like, you should change this and then somebody else comes in and approves it, and then you just ignore that other person, right? 
+
+[00:10:06] Sign commits are if you do it from the UI, they're signed. But otherwise, you need to get a cert. Yeah, lots of like ways that you can tweek this. Every box you check add safety, except for the lock branch, which just makes it, I guess lock branch makes it really safe, right? 
+
+[00:10:26] Because it means it can't change. Yeah, this, yeah, this one, actually will stop you from being able to break your own rules, but then you could also turn it off as an admin. So [LAUGH] yes, you can lock the door that you have the key too. Yeah, obviously, every box you check has a certain level of safety and a certain amount of hassle, right? 
+
+[00:10:48] So this is a process piece of how do you manage a team, managing a code base, both either as a member of the team or the leader of the team. It's like figuring out what level you're comfortable with. Now, to be clear, it is very tempting to be all New Year's Eve about this or New Year's Day. 
+
+[00:11:11] Which is it's a new era of quality in our code base and check every single box and put on draconian and it's a great way to have a small-scale revolution on your team. It is like the natural inclination, it's like, I found out about these features, we're gonna have the best process ever, I'm gonna make everything safe, and then there will be riots in your team. 
+
+[00:11:35] So my suggestion that you didn't ask for is the obvious ones of make sure the checks pass. I think everyone could be on the same page with this, don't merge failing tests or a broken build. That one seems non-controversial to me, right? Somebody should review this PR before I just open and merge it myself seems non-controversial to me. 
+
+[00:11:59] If we want later I can pull up my own repo and see which ones I like, some of them have been checked and unchecked by people on my team. [LAUGH] Right, and so we can see what the current state of the world is if somebody's interested in a little bit. 
+
+[00:12:11] Cool, and then you can see I can turn off the ability of what I just did earlier, which is force push. Again, sometimes you need these things. But I would start small and build it up and you can create this. Cool, so now I've got these branch protection rules in place, and now I can't merge a broken build in, review is required. 
+
+[00:12:33] Did I check the box? Not allowing me to do that, which is going to become problematic for me in a little bit because ain't nobody else in this repo. That's the thing that I will have to address at some point, but at least I demoed that it worked.
+
+---
+
+# 15. Running Multiple Jobs
+
+[00:00:00] >> Let's look at the challenge mode here. And it's true challenge mode because I didn't even give you any hints. That said, I will open it to the room. If you looked previously they ran sequentially. You saw that the test ran and then the build ran, right? I'm really running the build in this case right now to make sure that it does in fact build. 
+
+[00:00:25] I'm running the build effectively as a test, right? Does this thing build? That'd be good to know before we merge it in. It happens sequentially. I have no expectations, so they won't have a hypothesis of how I could paralyze these things. I don't expect anyone does, so I'll pause for dramatic effect, yeah. 
+
+[00:00:47] >> Could you make two workflows? >> I can make two workflows, and I can do something once. What's that? >> I meant two actions. >> Two actions. I think what we realized today is two jobs. I could also make two workflows. Two workflows is technically a correct answer. 
+
+[00:01:01] >> That is correct, but it's not right. >> From the chat, using the and and, using double ampersands- >> The single ampersand- >> It'd be sequential still. >> Yeah, it still runs, if there is a way, I think it's one ampersand might run them in parallel. I'm definitely not gonna live bash, that's not happening. 
+
+[00:01:19] The only problem with doing that is, if that command fails, you don't get a great error message, right? So, I spiritually like that answer, we're gonna go with the two jobs. Two workflows will also do it as well. I will talk about the trade-offs because I went from, I'll show you mine in a little bit, just to kind of give you a tour of a production level one, whatever that means. 
+
+[00:01:45] And I'll show you some of that as well, but I feel like we just need a little bit more understanding before we go look at that one. So, yeah, I originally started out with a workflow for Lint, a workflow for running the unit tests, a workflow for building it, and then I condensed that into one workflow that had many jobs, right? 
+
+[00:02:06] And let's get that in place and then we can kind of talk a little bit about what that means. So, you can see we have jobs. And then this is kind of, think about this as a JavaScript object, that's the key. The value is everything kind of nested in here, right? 
+
+[00:02:21] And so we will start with everyone's good friend, copy and paste. And what we will do is now we have two keys that are the same, so we will call this one unit-test. And we'll take out the build part. And we'll call this one build. And we'll take out the test part. 
+
+[00:02:50] Cool, so, steps run sequentially, which kind of makes sense given the name. Jobs and workflows run in parallel, right? So these two jobs will run in parallel. Unit test and build will run together. Are there questions that jump out at you as you stare at this workflow, yes? 
+
+[00:03:14] >> Can we share the dependencies between the jobs? >> The long answer is yes. [LAUGH] The short answer is no, right? Each one of these jobs as it runs in parallel is running in a completely fresh VM, right? And so can you share stuff between workflow runs? Yes, can you share stuff between these two jobs? 
+
+[00:03:47] Technically yes, right? That said, it's somewhat squirrely and there's slightly better ways to do it. I admire the software engineer ability or desire to kill duplication at all costs, and so I spiritually, I asked this question, does anyone have any questions, because the first thing that jumped out at me was like, I don't like that. 
+
+[00:04:11] Can I make that go away? Yes ish, yes, but for now, no. Cuz each one on a separate raw virtual machine, which means they do need to check out the repo, means they do need to set up node, they do need to install the dependencies. And you'll notice that I'm being a little squarely with my issues after all those things, but yeah. 
+
+[00:04:34] Let's verify that this works and then we'll talk a little bit about how to begin the path towards spiritually answering that question. >> Where does the .GitHub directory go in a repo where client and server directories exist inside the same repo? Do you use a global .GitHub directory or for one for the client one for the server? 
+
+[00:04:55] >> I am pretty sure you have to use a global. I don't think it'll pick up other .GitHub directories. Yeah, the audience is also shaking their heads. I'm pretty sure if it's one of those things that someone asks you directly on a live stream, you start to get a little more [LAUGH] nuanced in your answer. 
+
+[00:05:14] I think it has to be in the .GitHub directory. That said, there is an action for, in any given one, you could ignore certain directories completely, right? Then you can also filter on the truthiness. And so you might have a .GitHub directory with workflows in it, and you might say, only if it's something in the server directory that changed. 
+
+[00:05:39] Only if it's something in the server directory UI directory that changed. Now, unfortunately, the more nuanced answer is, yeah, you can totally do that. The big question is, I understand the nature of that question, because I think about that stuff, too. On the other hand, if the server changes, do you not want to run the UI tests, right? 
+
+[00:06:04] Maybe if they're completely mocked out no, right? But maybe if you are actually talking to the real server and those tests, you absolutely wanna run the UI tests, right? And so spiritually, the answer is you can ignore entire paths of things or only do it on certain ones, but then there are some philosophical questions like do you actually want to. 
+
+[00:06:29] And like I was kind of saying in one of the other question answers which is, that really depends on the problem you're trying to solve, right? If your UI tests are completely stubbing out and mocking out the entire back end then you know running is a waste of time. 
+
+[00:06:42] If they do talk to the real back end, changing something on the server, you might choose to run the UI tests because that's useful. But here they are, [INAUDIBLE] what I should have done when answering a question is push that up, and then answer the question but we'll watch it in real time. 
+
+[00:07:00] Cool, so you can see I've got that little dot right there, which is saying, cool, they haven't completed yet. And they're queued and they're waiting to run. But if we go into the details now, you'll see that there are two here. If I go, no, I wanted to go to summary, sorry, I lied to you. 
+
+[00:07:18] We go, yeah, you can see that it doesn't visually look like they're running in parallel cuz it looked like a list, just like the other list. But this list is running in parallel. And if one thing relied on another thing, you would start to see it go this way for the sequential steps, and parallel in this case is straight down. 
+
+[00:07:37] So you can see build is already finished, unit-test is still running. And we can kind of begin to put that all in place. Now, if you did, to kind of begin to spiritually answer the question, we'll do this a little bit deeper when we look at even one of mine. 
+
+[00:07:56] If you do have one that depends on another one, you can say, you can get very nuanced with the dependencies, right? And so you could say something along the lines, this could be pseudo code. You could say the build, Needs unit-test, right? And now build won't run until a unit-test is successful, right? 
+
+[00:08:25] So theoretically, could you have a job that installs the dependencies one place and then everything else like rely on it? You could, you might choose to. With two, it's like you don't even know which one was gonna finish first, right? So now we're saying that one doesn't start without the other one. 
+
+[00:08:43] There are ways to speed some of this up that are more useful than having to rely. But you'd also say unit-test and, Some-other-action and now both of those need to complete before that one kicks off. Or you can have two different ones that are really relying on the same first one. 
+
+[00:09:05] So you can play with your dependency manifests in interesting ways and you can get nuance of that, but we're not gonna do that just yet. But, can I ask you a question? Can I turn the tables on you? Well, other than just nobody likes to see duplicate code, what was your concern? 
+
+[00:09:28] >> I mean, we're doing the same thing twice- >> Yeah. >> Wasting time. >> Yeah, we're wasting time doing the same thing twice even if it's in parallel. It's in parallel, right? So we're not wasting time, but we are spiritually. We're wasting something, right? We're wasting, I don't know, it's a free, we're slowly melting a glacier, right, by installing our dependencies twice. 
+
+[00:09:54] That said, let's say, I change the readme. I also feel like reinstalling the assets is a waste of time. So it's not even, yes, you are totally correct. And also, maybe you're, we're gonna expose anyone in this room who is better than me. Who has never done the thing where you've just pushed up 17 commits called fix stuff, make it work now? 
+
+[00:10:26] >> [LAUGH] >> Maybe some exclusives if you weren't working an open-source repo, right? [LAUGH] I hate everything as a commit message, right? And if there are no changes to your package JSON, it seems silly in those cases. Rebundling all those assets every time is silly to begin with, yeah. 
+
+[00:10:47] >> There is also an action for caching. >> I love the segue. I could show that was not a plant, [LAUGH] right? There's also an action for caching, that's a segue.
+
+---
+
+# 16. Caching Dependencies
+
+[00:00:00] >> I'll just call out some of the nuances right now, which is GitHub allows you to store stuff in two ways. We're gonna talk about both of them today. One is caching and the other one is artifacts. Artifacts are things that you might want after the build process. 
+
+[00:00:14] Caching is more like, hey, multiple things are gonna need this thing, don't redo things. Now, your first gut reaction would be, we should cache node modules. We should cache node modules. Can someone read my own notes to me about what npm ci does again? It deletes node modules. 
+
+[00:00:38] >> Deletes node modules on every run. So we could cache node modules to delete it on every run, as some kind of we hate ourselves kinda thing. The other thing that we can do is I'm using npm as somebody, and this is useful for anyone on the livestream. 
+
+[00:00:56] Someone mentioned earlier that there were some issues using pnpm. There are alternatives to npm, pnpm I don't even know what the p stands for, which is what I use, yarn, so on and so forth. And for a while, it's one of those cat and mouse games, which is, yarn was better than npm cuz it did a whole bunch of these different things that then npm just did, right? 
+
+[00:01:24] And so pnpm, which I have never said out loud until now and hate saying, yarn, npm all have this idea of also they have a cache, right? And this is super useful, because let's say you are the kinda person who before they moved all the exercises into one repo, maybe did the thing I do for a lot of the other workshops, which is make 1,000 repos and make you clone and npm install. 
+
+[00:01:49] Even that's wasteful on your own computer versus if you've already downloaded for one, if it's the same version with the same hash, then you should be able to just use that same one. So all of these have a cache file stored on your machine where they cache the dependencies you've downloaded, right? 
+
+[00:02:07] What we could do in our build process is cache that, which is we'll still do an npm ci, we'll still set up node modules, but instead of reaching out to the network, we're just gonna run on a local cache. Now, these are fresh machines every time, so we need to do something. 
+
+[00:02:20] But we have that great segue that says that there's an action for that, as they say. So let's go take a look. [SOUND] Caching, that looks like a good file to open up. Sweet, and so that's the long sheet answer. Let's look at the short version with these little eyeballs, which is we can add an additional step. 
+
+[00:02:48] And the reason we're gonna do this the long way and then I'll show you the short way, is that there is a shorthand for doing this that is way easier, but it only works in the very specific use case we're talking about. This way will work for everything. 
+
+[00:03:04] And so it is worth looking at both the one that you could use for other things that are not npm and the one that you can use more generally. So other things, if you just want inspiration of where you can use this, is npm comes free with node, so set up node, it installs npm. 
+
+[00:03:22] The act of installing pnpm, if that's what you use, is a thing you might wanna hold on to, right? And I don't do this because there's nuances around it, the open source project I work on, we do have a CLI binary that actually has a full version of the server baked into it in beta. 
+
+[00:03:44] I don't cache it because I'm too lazy to figure out how to check that I have the most recent version, because it's tricky. I could totally do it if I sat down one afternoon to do it, I just haven't. But I might wanna store that version of the CLI because we don't change it that often, we change it once a month or something like that. 
+
+[00:04:03] And so there's all sorts of things I might want to cache between runs, and so this action will do it. All right, so let's talk about what it is. So uses, which is just like, where is this thing located, which is actions/ cache@v3. Those are kinda like in your package.json on, they're locked so that if somebody like updates an action with malicious code, you have to go and bump your version to opt into that malicious code, or breaking changes, or malicious code. 
+
+[00:04:30] So actions/cache, that's like the repo name, @v3. An id, that's just some identifier. And then this with, which takes two things, a path, like what are you trying to cache? That .npm directory is where npm puts its cache files, right? So everything you downloaded, you hold on to. 
+
+[00:04:52] That's the path that we wanna cache and save between runs. And the last one is, what is the key, right? And so this is how to check if we should read from the cache at all. And you can be really nuanced with this. You could have, for instance, this repo, to my knowledge, does not have any compiled assets, right? 
+
+[00:05:19] I'm looking at you like Node SaaS, right? Or if you build an electron app, like something where they're compiled for that operating system and architecture, right, then you might wanna also toss in, and this is obviously the markdown file, you might toss in runner.os, right? So now it'll be, okay, we are storing npm caches for Windows. 
+
+[00:05:46] And we'll talk about the last part in a second, right? Whatever unique identifiers that you need, you might want it for given, if you have a weird, why'd I say weird? If you have any kind of branching strategy to speak of whatsoever, you might use that somehow in here as well, I don't. 
+
+[00:06:03] The more important part is this piece right here. So this is how you do string interpolation. This is a function just provided by GitHub Actions for you, which is cool. Go find the package-lock.json, which we know can't change when we're using npm ci, and just create like a checksum hash, right? 
+
+[00:06:28] If the package-lock has not changed, use the cache. If the package-lock has changed, which means the dependency have changed, don't use the cache, right? But then that will be a new key and we'll just get a new cache, right? So basically, the first job that ever comes across this will check to see, hey, do we have a cache key with npm-, whatever the unique identifier of that exact package-lock.json? 
+
+[00:07:00] If yes, cool, load up that cache, we'll use that. If no, then go ahead and do the thing and automatically create it at the very end. We'll look at the pre and post to see this all happen. But that's kind of the kinda high-level piece. So we cache it and there it is now. 
+
+[00:07:21] Fun fact that if you edit your YAML in a markdown file for your notes, that does not necessarily change your code. I know this cuz I used to teach for a living, and you knew it was time to stop when you were editing the markdown file with the code instead of the actual code, and refreshing your browser, and wondering why it didn't work. 
+
+[00:07:46] >> What of the dashes? Is that just a semicolon sorta thing? >> These dashes? >> Yeah. >> These are like separating each. Name and uses, this is two properties on the same object. >> Okay. >> It's a syntax for YAML. >> Yeah. >> Okay. >> That was also a question in the chat. 
+
+[00:08:05] There's also the edit. So I noticed name can be the first property, but- >> Yeah. >> Name is followed the run command, and it's that same thing. >> The properties can be in any order. >> Yeah. >> It's kinda like keys on an object in JavaScript. >> Sure, so a dash pretty much is declaring a new object. 
+
+[00:08:20] >> Yeah. >> Okay. >> It's like a comma. It's basically, Sometimes I'm like, should just be JSON. [LAUGH] YAML seeks to be easier than JSON, sometimes guilty of being a little bit too clever by half. But also I am from the era where I had to write CoffeeScript for a portion of my life and I'm still hurt by that. 
+
+[00:08:46] So, sweet, sweet, sweet, and you can put this in any order, if you wanna do uses and then name. I can even do like, if you wanna really hate myself. And just so we can see it later. What emojis do we like to use? My new favorite is this one, so. 
+
+[00:09:06] >> [INAUDIBLE] >> The melting face, yeah. And I'm mostly putting that so we can see it, some way to be like, cuz we checkout repository, that could be anywhere. Cool, and so we will also, I talked a lot about caching, I didn't put it in. Cool, and we gotta get the indentation is important in YAML, so it's like Python too. 
+
+[00:09:29] How many languages can I smack talk at the same time? Let's find out. I am a recovering Ruby developer, so I have no right to say anything. And let's actually do this across the two. So the first time, they're both gonna make a run at it, pun unintended that time, which is because the cache will be empty for both of them when they start in parallel, right? 
+
+[00:10:04] But then the next time, one of them will fail writing to the cache, but that's okay, because the reason it will fail writing to the cache is cuz the other one already did it, right? Which is also, if you mess this up and just do npm-, you're gonna have to go in there and manually fix it, and we'll talk about how. 
+
+[00:10:26] So we'll add in those two caches, and let's go ahead and we're gonna say, add caching to workflow, and push it up. And I will hit Cmd +Shift + G again to open yet another tab, even though I knew totally that I could have just Cmd-tabbed over. And let's take a look at what we got. 
+
+[00:10:53] All right, starting the job, setting up the job. You can see, there's my happy, Checkout repository right there with my melty emoji face. Thing that I might be doing when I get back to work next week is putting emojis in all of my steps, cuz no better way to say I'm back from PTO than causing chaos. 
+
+[00:11:22] And also, it's nice because you can then see where the post is as well. I kinda like it, actually. I put the emoji in there as a joke and I think I'm into it, cuz it makes it very clear where the start and end of each one is. 
+
+[00:11:36] So pro tip that is hot off the presses, emojis work in your job names and can be useful, cuz you'd see setup node is kinda in the middle there, they do the post in the opposite order that they came in. Cool, cool, cool, and so also, if you look, Set up job is like lowercase, but then post, I don't know how to handle consistent capitalization in these things, so do whatever you want, there are no rules. 
+
+[00:12:09] Cool, so we run npm ci, we run npm test in this case. We'll do post setup node. Actually, we want to post cache. Failed to save, It did fail to save. Luckily the error message is pretty good on this one, other than the giant hash. Another job may be creating this cache, which is true. 
+
+[00:12:30] More details, cache already exists. You can actually see that it was pull request number 2, which is also this PR. So the error message is somewhat helpful in this case. So if we go into build, which finished first, we go into cache, and you can see that instead of downloading that 45 megabytes every time, we now have it in place. 
+
+[00:12:55] And so I'm somewhat curious, which is the npm ci, which is still relatively small for this repo, was 16 seconds. It does mean you can either rerun all jobs, or we could just push a command. Let's do the polite thing. And while that reruns, I'm gonna go back to run unit test. 
+
+[00:13:15] You'll see that we now have caches here, which is, there's our cache, last used, one minute ago. And this is useful if you forgot to hash, or you messed something up, and now you have a cache that will never be busted. You can manually bust it yourself by hitting this little trash can right here and delete it. 
+
+[00:13:40] Now, I would love to tell you despite how many times I both read and took notes on the rules around caching, that I remember them while I am live talking to you all. I think it is like, you have a max limit of 10 gigs and anything not accessed in the last 7 days, after 10 gigs, it's gonna start purging stuff. 
+
+[00:14:00] And I think if you haven't touched a cache in the last seven days, it also purges. Important note about these caches is, and even just the little hand wavy version of these rules is good enough, which is that cache is also uniquely scoped to the target branch and PRs of that target branch and those branches themselves. 
+
+[00:14:23] That sounds like words, right? Let me explain. When main runs its push, it will also set up a cache with this key, right? And that means main will always have access to this cache. Rerunning this workflow, which is what I'm literally demoing as we let it run, will also use this cache, right? 
+
+[00:14:48] However, a different PR with a different branch does not have access to that cache unless main has it, right? So if main has it, all PRs against main can also access that cache, right? Reruns and children of those can also access that cache, but siblings can't, right? You can only either it's your cache or the target branch's cache, you cannot go across, right? 
+
+[00:15:17] And with a unique cache name like that, and there are tricks that you can do, but let's assume that this is true. So yeah, it'll save reruns, but that save's pushing multiple commits and whatever if you haven't changed it since main. You're getting 80% of the benefit for almost no work, and it'll be even less work in a second. 
+
+[00:15:38] Sweet, so we've got that, and this should have run at this point. Cool, cool, cool, one thing that I notice is, it doesn't seem to be really any faster, but let's see. In my previous testing, it cut down by like 33% or something like that. So, all right, yeah, so before it was 16 seconds and now it's 7 seconds. 
+
+[00:16:03] Now, you can be like, I don't care. One, this is a small app. Two, something something play right downloading browsers hypothetically, a lot bigger than your npm modules. Three, if you have a lot of throughput, it's not just gonna run every workflow all the time. You will run one and you'll queue up the next run for that one to finish. 
+
+[00:16:30] So let's say hypothetically, you are more than one person who's talking in between pushes. You're a team, right, and they take longer, right? It does mean that you will get in line behind your coworkers, right? And so every little speed up then multiplies over the number of runs. 
+
+[00:16:49] And also, like I said, some little node modules for, I don't even know what the dependencies are in here, like three testing frameworks, both Svelte and React, some stuff, 45 megabytes but not a ton, versus much bigger caches, obviously, it pays off a lot more. Luckily, there's no difference between caching big things and caching small things, so we got that going for us. 
+
+[00:17:13] So yeah, you can see at this point, and if we even go in here, you can see it retrieved the cache, and have it all there as well, cache restored successfully from this key. Great, so we can kinda get some introspection into that process. Like I said before, actually, you can go into the caches, you can delete any cache you want. 
+
+[00:17:34] If you want as an exercise to yourself, to make yourself happy, npm install literally anything, see if left pad is back or something like that. And go ahead and push it up and watch it bust that cache. You'll still have the old one there, but new caches will get that as well.
+
+---
+
+# 17. Cache Configuration
+
+[00:00:00] >> In case you can imagine, I have a general rule, which is, if something seems tedious and common, either there's a faster way to do it or you should make a faster way to do it. You can imagine, caching NPM cache based on a package lock file, is a thing that you might want to do all the time, and that everyone might want to do it. 
+
+[00:00:28] And that is true, so with that setup node, you can pass it some arguments with the with command, one of them is cache. And you just say what, you're caching, right? Cuz you could be using pnpm, you could be using yarn, it doesn't know. You say, I would like to cache npm, and we can go ahead and we can adjust that and get rid of all of this. 
+
+[00:01:01] And we can put all of this in here, and that is a lot shorter. And this will work for the specific use case of node. And at least npm, I would love to tell you if I know exactly which are the ones that support some of the syntax was, but you could probably open up the docs and look. 
+
+[00:01:24] Cool, so we've got that, this is running again now. Most of the reason why I'm demonstrating this is, we can go either to the Actions tab or in here. And instead of node, npm cache is not found, anyone know why? It's just because it happened to use a different key. 
+
+[00:01:47] It shows a different set of prefixes around that. If we go back to summary, no, we got to go back one. No, I was right. Caches, you can see that I now have two caches. They happen to call it no dash cache, Linux NPM. If you think about it, it is the setup node function, you pass in npm is one of the things that could cash. 
+
+[00:02:10] It doesn't know that you don't have compiled dependencies so it also saved like what OS you're using. Reasonable things for it to do, the important part that you will notice that that long string of gibberish is the same long string of gibberish. So it works, it just used a different key. 
+
+[00:02:32] This doesn't cost you anything, so you can delete it if you're very particular, and you cannot if you don't want to. Whatever makes you happiest works for me and those are there. Let's just check the notes to see if there's anything else we wanted to talk about here. 
+
+[00:02:52] Yeah, this will work for any asset that you want if you are, anything that you are building that is separate. So, there was a question earlier around, what if I have a server repo and a client repo, right? You could theoretically, maybe don't want to recompile the server if nothing changed. 
+
+[00:03:17] So you can do that as well, let's real quickly, I want to see if I can pull up the docs. Let's go, I'll say, action cache sweet. There, have not a pull it up after a break. You can have it fail in a cache miss, I don't know why you would ever want to do that. 
+
+[00:03:41] Cross OS archive, restore keys are hierarchies that I can fall back to for the purpose of a locked package json, I don't have a use of that. What I was looking for is, if I can find it fast enough, here it is. If you look at actions cache, you can see that it's using the ID cache primes in this case, which is a made up function, it's not made up, it's real. 
+
+[00:04:06] Which is, just to get IDs is just a unique identifier, I just explained what the word ID was to you. Unique identifier that you can reference in a later step which is, so we have steps, okay, with the ID cache prime's. Its outputs which are things that came out of that step, cache hit does not equal true, so, you can say, hey did you just build the server and compile it all? 
+
+[00:04:33] Cache that for me. Go a head and try to pull it from cache next time we run, right, for what ever reason, you need some way to keep track of what version it was or something like that. And that could even just be a thing in a manifest or something like that. 
+
+[00:04:50] If so, just pull it from the cache and don't recompile it, right? And so you can do some amount of conditional logic with this if. Ours, we don't need that because by definition, it will write to the cache at the end as the post step, if it doesn't find it in there. 
+
+[00:05:09] But you're always otherwise npm ci no matter what and putting that file there. So this is, only do this thing if it wasn't in the cache and then put it at the end. This is if you need a little bit more granular and fine tune control over that. So that is caching, we will talk about artifacts which is the other thing you can do when we have something to artifact, I could do it with the build assets just for funsies. 
+
+[00:05:38] But I was thinking maybe I do one and when we have something else, then you could do one too, good like workshop. So we will wait to talk about artifacts then but like anything where it's the actual thing. The built thing that you want that maybe you can release, maybe download or a report or videos from Playwright or your code coverage report or something along those lines that you want to access and use as an artifact. 
+
+[00:06:01] Caches are mostly things that the actual processes themselves use. Okie dokes, kind of looking through some of these. We did the branch protections, I'll talk a little bit about running the actions locally before we jump into component testing. I'll leave this as an exercise right now, which is just simply adding one more script along with the ones I made that runs prettier. 
+
+[00:06:27] You can take a look at that, we'll revisit it later when we configure prettier. But I kind of wanna jump a little bit into component testing. We'll go back to the GitHub actions after we do a little bit more testing, when we want to take our code coverage reports, and store them as artifacts. 
+
+[00:06:44] If you want to run your GitHub actions locally, you can do that. You install this thing called act, A-C-T. That's, I'm gonna guess from the word action. And you do need to have Docker and it will run them locally in your terminal and let you see based on what the heck is going on. 
+
+[00:07:12] It will let you know if the fans on your computer work and you can squint at a terminal versus a UI. It's there, you can use it, I am not going to have everyone live Docker cuz that seems fraught with peril. But it's a thing that if you really want to run this locally and test it and stuff like that, you are more than welcome to, I'm just bringing it to your attention.
+
+---
+
+# 18. Component Testing Overview
+
+[00:00:00] >> Let's talk a little bit about component testing. So, component testing is that kind of next level up from the hierarchy from unit testing, right? Unit testing's a breez easy call function. Did you get what you expected to get? That works, and component testing is the next phase up from there, which is run code. 
+
+[00:00:23] But for coding, you can't just call as a function. Write code that has one very specific side effect, right? Technically, I guess React functions or React components are these days functions, and I'm sure you could call them but good luck testing on click handler. You know what I mean, right? 
+
+[00:00:53] For those kind of more important pieces, could unit test a React component? Yes. Should you? Probably not. Somebody's gonna have an important use case, and yes, then do it. But for the most part, we're trying to say, hey, I am willing to take on some additional complexity, and what I would like in return for that additional complexity is something a little closer to the real world usage of this component. 
+
+[00:01:24] So yes, you could unit test it. But you are being like, I would like to very complicated do that React, create element dance and all those things. What we really wanna do is we wanna see, hey, is this button disabled? I did these DOM changes work the way I wanted them to? 
+
+[00:01:42] If it is make sure the password certain length before you enable the submit button, right? Generally speaking, you are going to need to hand it to react dom.render. That's not the name of it anymore. createRoot. And actually be able to use these things. Now, the true other end of the spectrum as we saw before, was that kinda integration end-to-end testing where build the thing, fired up in a browser, click the buttons. 
+
+[00:02:18] That is the truest version of that, but you do have to download said browsers, start up said browsers, build asset load into page, not as fast as a unit test. Component tests seek to get you somewhere in the middle. I am not, I think if I was, for instance, building a design system, right, I think that I would use a lot of component tests. 
+
+[00:02:52] Even there are ways to integrate your testing with storybooks, stuff along those lines. There's a lot of use cases if you wanna get a lot of the functionality of individual pieces, right? Insofar that I work on open source project where we are kind of eventually gonna have an extensible UI and the ability to have plugins and stuff like that, we will probably take pieces of UI and make it into a design system. 
+
+[00:03:17] At which point like yeah, that was lightning fast run through them all, make total sense. However, we should go through, we should look at this. You might decide yes, this hits the value prop here is amazing for the things that I'm working on. Awesome. I have worked on applications where our component testing was, cuz we had a lot of that Cypress tests and unit test coverage and the value add just wasn't there, right? 
+
+[00:03:46] The goal here is as we think about these enterprise UI apps or development is we have an arsenal of tools that is useful for the various ways in which the apps we work on are weird, right? In this course, we have left the this is what you should do all the time area of the world. 
+
+[00:04:08] Yeah, you should have tests, but that's news flash for nobody. Here's a set of very specialized tooling that you can use to solve whatever problem that you have, right? Maybe the act of spinning up, maybe you're inside of a much larger application, something, something microfinance. And even spinning it up in Cypress or Playwright is like untenable. 
+
+[00:04:38] Maybe you just have a really, really, really complicated form and having to spin up the entire app with all of its dependencies and mock out everything so that you can test all the form validation and whether or not certain things appear in certain states is just not worth it for you. 
+
+[00:04:51] And too much of a hassle, then component testing is great, right, and you should totally do it. And if you have a thing where it's very easy to spin up everything and point a browser at it, you might not use it. Those are both really, really, really reasonable takes, and you have both at your disposal.
+
+---
+
+# 19. Component Testing Configuration
+
+[00:00:00] >> Let's take a look at what this looks like. And so if you look inside src/examples/counter, I've got this counter test, which is kinda showing you what we can put in there. And well, actually, I'll flip over to that in a moment, but look at it here first. 
+
+[00:00:20] It should render the component, right, where we can actually call render and with some JSX component. I have also, I don't think for this one, I think for the next example, have also done it in Svelte. You will have to squint to see the differences. The same is true, this is using something called React Testing Library. 
+
+[00:00:44] React Testing Library is a series of tools, family members include Svelte Testing Library, Angular Testing Library, you see the theme here, right? In fact, they're all mostly based on this thing called DOM Testing Library, right? And as you know, at the end of the day, all Svelte and React do is they render nodes to the DOM, right? 
+
+[00:01:04] Yes, something, something server-side rendering, but generally speaking. And so they're all kind of built into the same framework, and so really, each one is a set of helper methods. So this will apply whether or not you use React. I just decided that doing Vanilla DOM manipulation is tedious. 
+
+[00:01:21] Most of us probably, even if we work in other technologies, we've probably seen enough React to at least grok the general concepts. If we use this test, it will fail. And it will fail with this ReferenceError: document is not defined, which makes sense cuz we're running a node, and node is not a web browser. 
+
+[00:01:43] It is the V8 engine for parsing JavaScript with, if we're getting pedantic, technically, setTimeout and setInterval are not in JavaScript, they are part of the behavior object model, yada, yada, yada. But generally speaking, most of the DOM is not present in node. And so when it looks for document.body, or if you look at the code, yeah, I think it's looking for either document.findbyid("#main") or something along those lines. 
+
+[00:02:18] But there's no document. So regardless of whether it's document.body or looking for a main or root node, it doesn't matter cuz there's no document, which makes sense because by default, vitest, and I believe this is true of jest, runs in node. Why? Because my golden rule of performance, which is true of the cache is true here, is not doing stuff as faster than doing stuff. 
+
+[00:02:44] And so most of the time, not creating in-memory node-based implementation of the DOM API is faster than doing that. So why would it do that if you don't need it? If you need it, then you can do that. And so the kind of two DOM options that we have is happy-dom, which is kind of the new hotness that emulates most of the browser APIs, and is allegedly faster than jsdom. 
+
+[00:03:23] I believe that. I said allegedly, that I feel like undermines it, it's probably faster. And jsdom, which has been around for at least a decade, possibly more, I forget when Dominic wrote it, but it's been around forever and ever and ever, which means that, one, it is probably incredibly well supported. 
+
+[00:03:45] Two, it probably has a bunch of old implementations that make it heavier and bigger than it needs to be, and thereby makes it slower. Someone asked at the beginning of this workshop, are we gonna use happy-dom? Generally speaking, I do use happy-dom. One of the exercises hit one of those, that word mostly, in most of the browser APIs, there was one edge case that broke in happy-dom. 
+
+[00:04:11] And I was like, you know what, if I'm gonna be live coding in front of people, I'm gonna use the more reliable one so I don't flail wildly about something that's not my fault. Cuz those are kind of bugs where there's no reason why it shouldn't work, except for some implementation, just switching out from happy-dom to jsdom made it work. 
+
+[00:04:27] No one wants to watch me do that standing at this podium, so I am using jsdom. I will say that my default is to start with happy-dom for that, it's supposedly faster, cool, I'm into it, right? As we talk, this stuff adds up, it's all about the cycles but also reliability is also important. 
+
+[00:04:44] That said, I'll show you how you can use happy-dom all the time and then for one test opt into jsdom too. But I felt that was slightly confusing as I was teaching, so I didn't. So that's the kinda origin story there. If you put this in the top of any file, and obviously, it could be happy-dom in this case, and the Jest one I think is Jest environment, most of it is all the same. 
+
+[00:05:14] You can opt in for one file, right? And I will show you how you can also use pattern matching to be only for certain kinds of files. So if you go to the top level, vitestconfig.ts, which is why I have to go into those subdirectories. The top level one is everything kind of in its mostly done state and intermediary ones are down below. 
+
+[00:05:39] You will see, and in fact, I'll just show it to you right now and spoil some of the surprise at the end. You can do these environment match globs, which is I have decided that, I don't even think I used this one per se, that if it ends in .ts, we'll just use the node. 
+
+[00:06:01] If it ends in tsx, I will opt into jsdom, right, or if I have the word component in it or something like that. You can choose to do it by file name, you can put in the ones that you need. You can do whatever you want in this case, whatever makes you happiest works for me, and then you will have that DOM implementation.
+
+---
+
+# 20. Using Vitest Environments
+
+[00:00:00] >> Cool, so let's actually go into that counter. And let's go ahead and [SOUND]. This one will most likely blow up cuz I have not brought in any DOM. Let's actually see that in practice. So we'll go into src/examples/counter. And we'll do, let's go ahead and go into this counter, and let's go ahead, aspire to be as easy as render(< Counter />). 
+
+[00:00:43] If you do like an npm start, you can see the counter and all the other demo apps on one page, to verify my sanity. It looks like it has an Increment button, it has a Reset button. It has the current count since the last catastrophe, which at the time was just something I thought was funny before I literally had a catastrophe earlier today. 
+
+[00:00:58] So I would hit that Reset button to zero, if I was being intellectually honest with myself, right? And so we can go ahead, we'll do npm run build, no, npm test. Cool. In this case, it fails and we actually want not just the solution one. We'll see why that fails in a second. 
+
+[00:01:22] That is intentional. In this folder we'll do counter.test. All right, cool. It skipped, so that's why it doesn't blow up. Now it blows up. Document is not defined. Few ways I can do this, I can do that like //@vitest-environment. Let's do happy-dom. And now it passes, right? Because all it does is it puts basically a global document object and a window object and spec compliant implementations of everything that you would have in the browser. 
+
+[00:02:04] So you could theoretically, I believe, let's see. I could do, I believe, screen.debug(document.body). Let's rerun, let's do a --run a second. Yeah, not a lot to see here. There's a body element in the document, for document.body. The lighter document will have everything on there. But if one was to, let's go ahead, and let's actually say render that counter again. 
+
+[00:02:53] You can now see that that React counter is rendered to that document.body. And you'll notice that that is not React, that's why you got the regular word class, you don't have any on-click handlers. This is literally a serialization of the actual DOM itself. So this is great when we talked about one of the value props of component testing is that we're using this stuff as our users would. 
+
+[00:03:20] As far as my test is concerned, yeah, I'm rendering a React component. This could be a Vue component. This could be just regular index.html and let it parse. This could be whatever you want it to be. And it doesn't matter. So one of the things we talked about early in the workshop was maybe you would like to migrate from Backbone to React, right? 
+
+[00:03:48] You could, unit tests are not gonna get you there, cuz unit tests are very closely tied to the implementation. You could write a ton of unit tests, and you will throw them all away when you throw away that implementation. Other than the actual rendering of this counter, which you could probably abstract and be clever with. 
+
+[00:04:04] You can basically, this is gonna be regular DOM. So as long as these tests pass, you just kinda swap it out to like mount, whatever the counter says, other way, and obviously, the browser based tests even more. And it's from the user's perspective of JC Dom. We will start to click it as a user and stuff along those lines. 
+
+[00:04:20] And those are more kind of resilient to changes. You can refactor all sorts of stuff and it doesn't really matter because as long as I click the button, and it increments, we're good to go. Like I said, the fact that this doesn't blow up means that the test passes. 
+
+[00:04:37] Which honestly, like I said before, there are tests that I don't keep in the final result that I like as sanity checks, right? I like them to just be like, is my test suite even working, right? A lot of times I have a VS Code snippet, which is like test whatever, expect true to be true. 
+
+[00:04:55] Am I even running the test file that I think I'm running? [LAUGH] Little stuff like that. Cuz maybe you're better than me, but I have lost afternoons to stupider things.
+
+---
+
+# 21. Interacting with the DOM
+
+[00:00:00] >> So then we've got this idea of should increment when the increment button is pressed, all right? We're gonna need to know some things here. So, yeah, we should, let's render the counter. Now, if we were when we debugged it before, I actually had an idea, let's do something. 
+
+[00:00:24] Let's cancel this and let's do dash dash UI. And we should [SOUND] I got to do the dash dash, dash dash UI, boom, okay? And so there you can see we have not run this test yet. We have the passing one, we have the one that's to do. 
+
+[00:00:48] And let's go ahead, and we'll type in screen.debug, and you'll see why I like this. In the console, okay? It's a little on the big side, and we can the syntax highlighting leaves something to be desired. But generally speaking, you can kind of see the shape of the DOM. 
+
+[00:01:15] We've got this increment button here, as well. Yeah, the syntax highlighting leaves a little bit to be desired. But generally speaking, we get a general shape of our DOM. And I'm wondering if this is just my dark terminal theme or something along those lines. I'm not totally clear, and we can get a sense of it. 
+
+[00:01:39] Now, one thing you'll notice is that I decorated some of these things with, like, current count as a test ID. These are useful for like finding stuff in the test. Could you use classes? Sure. Could you use IDs? Absolutely. Do those maybe mean things to your design buddies? 
+
+[00:01:58] Yes. Can they change? Do some modern tooling, do everything in their power to obfuscate the class names cuz something CSS and JS? Also, yes. Do you ever have to worry about somebody thinking current count is just a useless class and deleting it versus test I dated, that test I did? 
+
+[00:02:18] I think everyone knows what that one was for. So sometimes it's about, like, protecting you from other people. Cool, so I've got that in place. The other thing you can always do is also spin up this app and just use the Chrome tools to inspect it, right? That's the thing. 
+
+[00:02:34] >> What can I answer this, again, I've been trying to. >> Dash dash UI, now if you use NPM tests, and you want a dash dash flag is to be npm test dash dash and then the dash dash flags. >> Those extra dash dash. >> Yeah, let me show that cuz those words seemed fine when I was saying them, and then it occurred to me that doesn't make any sense if you weren't literally the one saying it. 
+
+[00:02:53] So yeah, there's an extra, and I think you'll avoid that if using pnpm. And if you just did npx vitest, you don't need that. But with the NPM test you do need to say like, and I'm gonna give you some flags now. Cool. So that will run in that place. 
+
+[00:03:10] So we knew that current count was the current count. So let's, I should increment the button, but let's start with like maybe I could have written this in the other one but here we are. You can see what I meant to do in the solution if you want, so we'll say now one of the changes you'll see is that like theoretically this will give you a container, but we have this screen cuz container was always the document body anyway. 
+
+[00:03:36] Screen is actually not scoped to anything. It's scoped to document body. And so it's like from the user's perspective, staring at the screen, what do they see? That way, you're not accidentally querying from some child node. So we go, we can say const current count equals screen get by test ID, current count, right? 
+
+[00:04:10] And we'll delete that for a second. The interesting part is, this is where some of the stuff we were saying in the beginning, somewhat behooves us, right? This test passes, this test passes because it doesn't fail. But before that could have been a bad thing. Here is kind of a good thing cuz like, let's throw an extra R in current count. 
+
+[00:04:33] It can't find that node and so it blows up. So the act that you could find it at all, this is a valid test case. We render a counter, cool, that didn't blow up. And then we went to go look for something with the test ID current count with one R, which was totally on the page, right? 
+
+[00:04:50] So we have validated two things in this test as zero expectations, right? Cuz those do blow up if they're not present. So it's not test, it's not doing what the test says in the tin, but it is like definitely exercising and testing our application. So we could say, we could do something like expect(currentCount.textContent).toBe. 
+
+[00:05:27] I had a good test earlier today, it should be zero by default and that passes. The problem is, that if it doesn't pass, because that's not super helpful. It's like zero, is not equal to double zero, okay? One of the things that you can do, and you'll see that I have the auto complete cuz this is a giant file. 
+
+[00:05:53] But I will show it to you kind of separately first and like how we got there, because it won't work otherwise. Is Jest DOM from testing library has a whole bunch of additional matchers like are all DOM related because the regular Jest assumes that you don't have JS DOM. 
+
+[00:06:12] Assume, you don't have happy DOM, assume you don't have anything, so it equals stuff that, Jest DOM basically says all the very DOM related stuff, right? To have text.Content closest, a whole bunch of various stuff unique to the DOM. You can either, if you're pulling it in, you can expand or extend matchers. 
+
+[00:06:36] Also, if you literally, I'll show you each is in this other file over here, which should actually be the one that matters, that's a different one. This is why you don't put seven apps in the same folder, cool in this counter. I have nothing right now. I could actually do this if I just import. 
+
+[00:07:03] I could do this in every individual file that I wanted to as well. But all I have to do is in any file, like, I'm gonna set this up basically to, we'll look to say, like, hey, run this file before we run the test. So it's, like, stuff that you can make available and do stuff if there's any kind of setup that you need to do. 
+
+[00:07:23] One of the things I do is lock the timezone into UTC, cuz it turns out GitHub's machines are in a different timezone than my machine, and you know what's not fun? Having tests that fail because the computer's in a different timezone, and then it is expect extend or extend expect. 
+
+[00:07:49] Expect extend, and we'll find out if I'm wrong. It's one of those things you do once in a code base, so you never actually memorize it. And then in vitestConfig, we will also say setupFiles, and we'll say ./test. I can't find that. Did I spell it right? >> Don't think it found your expect extend. 
+
+[00:08:23] >> Yep, it could have been cuz it could have been. Let's find out together, extend, expect. Hey, there we go. And now we can go in here, and we can have a much healthier to, and like, that's cool, right? That's actually a different extender that's also installed. IntelliSense is good, but it was not set up for this ridiculous repo that I have. 
+
+[00:08:59] To have attribute, that's one coming from Jest you can see in testing library matchers to have class, right? To have focused very DOM specific stuff, right? So now, I can say to have text content and if you look, we at least get a slightly better error message. I was expecting it to show me the DOM, but it didn't, but we at least get the expected element to have the text content. 
+
+[00:09:34] And you could actually write your own matchers that have, if there's something really unique, I have never had to do that before in my life, but I appreciate that I can. And even the regular to equal, you can put in a custom error message. Again, never done it, I just like that I can. 
+
+[00:09:49] Cool, and we'll save that, and we can see that it passes, all right? So now, our next trick for my next trick. [LAUGH] We would like to do what this test actually says, right? Which is, should increment when the increment button is pressed now press isn't a thing, but click is, and so we could. 
+
+[00:10:14] We need to go find that increment button, and then we need to press it, and then we should expect that it has one. Should I move this to a different test maybe, but I don't want to I kind of liked the idea that hey it's got zero then we go ahead, and we figure out the next thing. 
+
+[00:10:34] So, in testing library, there is a very helpful function called fireEvent, and we will say fireEvent., look, change. No, we don't want change, we want click. Yeah, and there was double click. There's a whole bunch of other ones. Click, and then if we look at the IntelliSense, it gives me an element. 
+
+[00:10:58] So with this one, we'll say screen, and so we've got a bunch of these find alls, that is kinda document query selector all. There's findBy, there's getAll, we'll talk about why that's different in a little bit. There's getByAltText, getByDisplayValue. For a lot of the cases, we do getByRole. 
+
+[00:11:24] What does that mean? GetByRole is basically, again we're thinking about this from the perspective of our users, they don't really know what different DOM elements are. And even the fact of the matter is, we've all been guilty of making an A tag link look like a button before, right? 
+
+[00:11:43] Who amongst us hasn't today, [LAUGH] or this week? But like a lot of those cases, if you care about screen readers, that's cool, because links are cool, that's kind of how the web works, but we would give it the role of a button. So it's like this idea of a spiritually a button, and so I can say button, and then we got to give it something, right? 
+
+[00:12:08] And these are all like things that the browser does by itself, which is if you have a button with this label, its role as a button with this name as terms as a screen reader in this case. And one- >> It's a DOM's aria-role effectively. >> Exactly, and to be clear, you do not have to define all these things. 
+
+[00:12:29] If you use semantic HTML, you will get a certain number of these for free. You do not have to be like button, role button, aria-role button. It's a button, the browser knows, relax. So let's go ahead and we'll say const button cool, let's go click that button. 
+
+[00:12:52] And then we should expect that current count has a text content of one and the world is good, and that all happens.
+
+---
+
+# 22. Abstracting Rendering & User Events
+
+[00:00:00] >> This is most of the way there. There's really like one nuance here, yeah. >> I'm curious, so the fire event.click. >> Yes. >> Can you use a standard click event? Could you get the DOM object and do a .click on that? >> That is effectively what fire event is doing. 
+
+[00:00:17] >> Okay,. >> Right it is firing a click event, right? >> So, but can we do, I mean, could we do the button element .click directly, or is that not working in this context? >> I don't think that one works, but we can find out. No. >> Okay, so it is something about the context. 
+
+[00:00:43] >> Yep, but you did lead me to a better question which is, okay, maybe with click events, but there are a whole bunch of other events either a, are very hard to simulate by doing this. Or b, is not the way that a user really uses the DOM, right? 
+
+[00:01:05] For instance, we might choose to register an event handler at onkeyup, right? But a user does not just fire a keyup, right? A keyup event is when you take your finger off the key. I don't know, humor me for a moment. What things would have to happen for a user to lift their finger off the key? 
+
+[00:01:36] >> Key down. >> Key down, right? [LAUGH] Yeah and there's some amount of holding that's happening at that point, right? So generally speaking, the whole reason we're doing this was we want to simulate something that somewhat resembles reality, then this is, yeah, it's fine, but it's not great. 
+
+[00:02:01] And so there is a library that is spiritually, when I say spiritually, I mean in the same NPM org related, which is called user event, right? And we have it here and you do need to do a few things, which is, before you use it, you have to do, I think that's just user, cool. 
+
+[00:02:36] An user event seeks to create heuristics that are more natural. So you do not fire a keyup event but you could theoretically say, it would simulate the act of pressing the M key down and taking your finger off. Which is probably gonna give you better and more accurate simulations of what is actually gonna happen. 
+
+[00:03:02] Cuz again, testing is great, awesome, wonderful, do it, yeah. You know what's worse than not having tests? Having tests that are just inaccurate enough to give you a false sense of confidence that isn't true, [LAUGH] right? And so, yeah. And one thing that you'll see is, so we can do user., and here's a bunch of the different options. 
+
+[00:03:30] At one point somewhere in the notes, I link, I have a list of all the things that you can do. Now, importantly, I'm pretty sure I opened up the type file and just copied all the keys out, but you can also see it in here. I think kind of one of the interesting things is, even for instance keyboard, you have a string, it will simulate the act of typing that string. 
+
+[00:03:58] So, and on change, if you've done react, you probably had an unchanged. But theoretically, no user triggers an on change event, they type into the input field one letter at a time, right? And so this will simulate a little bit more of that. And you can see there's a whole bunch, there's upload, yeah, I have a list somewhere in the notes for you as well. 
+
+[00:04:25] And so we can do user and we can do, this one click is alternatively the same. And that, it's gonna leave that IntelliSense as I'm building up to something, I'm just gonna let it sit there for a second. Don't don't look at it, don't look after the colon. 
+
+[00:04:41] User, click and we'll click on the button, which I should definitely call an increment button. And my test fails, great, really glad I went to that whole spiel. Everything's good. Wait, right, careful listeners will see that in the act of doing multiple things beyond just finding one event that triggers something in this whole pressing a key down stuff along those lines, that takes time, which means we return a promise that will settle when it is done doing the thing. 
+
+[00:05:13] And we do need to await that, in this case, a click, sure, but a type or something along those lines and we can begin to have that in place. The other thing is that this should have gone into setup, which is what I aspire to run at the very beginning. 
+
+[00:05:34] This will also extend it as well. This is really what I wanted anyway. Utilities is a place for me to put helper methods, I now know this because I'm ready to put a helper method. So let me go and wind that back a little bit, we'll just change this. 
+
+[00:05:48] As you've just learned, these file names are completely arbitrary, which is nice. But, to the theme that we had with the GitHub Action before, I don't like to repeat myself, and you know what seems not fun? Having to put this at the beginning of every single test where I need to simulate a user event. 
+
+[00:06:11] Because we can assume, maybe assume is a strong word, that if one was going to go ahead and render, they are likely, if they're not just querying the DOM, at which point like, we can argue that to match that snapshot is better at that point, I still say no. 
+
+[00:06:26] But, the fact that these things will probably come together fairly often, is that fair? So maybe, if I know that I'm gonna use this, maybe if I go through the act of rendering, maybe you just also do this, right? And so let's give ourselves an abstraction here, which is, we're gonna pull in render from testing library react. 
+
+[00:06:51] In fact, let's actually we're gonna pull in everything. Yeah, we'll just do this for now. Render, And you have two choices how you do this, I'm going to do it, I'll decide on the moment. We'll do const, call it render component for a second, because yeah, can't have the same name. 
+
+[00:07:19] Which should take, if you look at render, it actually takes two arguments, which is borderline impossible to read, but if you squint closely. The first argument is that element like we saw with counter, and the second one is some number of options, right? That one's pretty easy to type. 
+
+[00:07:42] The other one, render options with the generic of queue, and I think it also then takes out queries, I've looked at this before. So here we'll say, React.ReactElement, and the options. What is options? We'll deal with that in a second. I don't wanna do this, I'll do it for a heartbeat. 
+
+[00:08:10] And all that we wanna do in this case is when we say renderComponent with a component and all of those options, what I would like you to do is go ahead, in fact, We'll call it ui. We'll keep it the same as what they call it. Const result, we can refactor, I'm live coding it. 
+
+[00:08:39] Where we will, in fact, render that ui with those options. We will also do that userEvent, no, go away, .setup Same thing that we had from that other file, and then we will return everything in result plus the user. So now when I call renderComponent, I will call render and also call userEvent.setup at the same time and I'll get both for free. 
+
+[00:09:20] We'll refactor that in a second, this is actually just a top level export. I'll refactor in a second, but we can go ahead and call this one renderComponent. If you're like no, no, no, I don't wanna call renderComponent, I wanna call it render, you have a few options where you can handle this. 
+
+[00:09:40] You can say as, Make this one renderComponent that you'll never use again. And this one can be render, right? Yeah, it's like they just can't be called the same thing at the same time. Now you will fight with IntelliSense later over this, but I am willing to have that fight and do it. 
+
+[00:10:01] So we still gotta fix this. There's a few more things that we need to fix as well, but let's go back into our test. I do have the counter in Svelte there, so you can see both. All right, cool, so here we've got, now what we can do is let's get rid of this render for a heartbeat. 
+
+[00:10:19] And we'll have render and you can see my one from this test utilities in this folder. What you angry about? So it gives the user the container, the base of the here's all the things. What you upset? Why are you mad? Expected two arguments and got one, that technically makes sense, that is the code that I wrote. 
+
+[00:10:54] So we can fix that, because it doesn't know that that one is optional. So we could say, and now it works, right? I can refactor this a bit. No, don't say that. Don't save any random things I wrote in any file. Okay, so we can refactor this a little bit here as well, which is this any will, one, opt me out of any kind of sense of IntelliSense. 
+
+[00:11:28] So a few options here, which is I could do, There isn't a type that I can just export right now, as a moment that you all are sitting in the room and whoever's watching us as I record this, there's no type that you can import for that option is because it's dynamically. 
+
+[00:11:47] So I could do, get me the parameters, typeof. So, zero base, so this option should be whatever the second argument to the render from React testing library is. I don't know what that is, but that should be the same thing, right? And that will do the trick. The only things that I would do here to make this a little bit easier, I did these to show you everything that we get from the results spread out in an object plus the user, we could shorten this a little bit, now that I've made my point. 
+
+[00:12:38] Cool, all my tests pass. So now I have a special version of render that automatically also sets up the user events and gives me that user. So let's go ahead and just change this real quick. And we'll go ahead, now I don't need this. And we say const user, And now I get both for free at the same time. 
+
+[00:13:06] And life is good and there was much rejoicing everywhere to be found.
+
+---
+
+# 23. Counter Exercise & Solution
+
+[00:00:00] >> All right, so I believe your next mission is, we got this exercise right here, we're gonna do a few more things. There's the very simple version before I did that abstraction. So ideally counter also takes an initial count and has a reset button. So now that you've watched me do it for a little bit why don't you spend a good, let's say eight minutes see if you can get these two tests to pass? 
+
+[00:00:33] Could you peek in a counter.solution? You could, should you? You should not. If you did need to peek somewhere, you can look at what I did up here, right? Or if you need to see that complete file, that is in my Fun Bucket of things. Here I actually called the typeof separately, which is nice, I should have done that before too. 
+
+[00:01:01] The other thing that I did in this version as well and I should bring over to my file and I'll talk about real quick before you do that exercise is we can also export everything else. So now I don't ever need to bring in testing-library/react when I go into my kinda smaller baby version of this. 
+
+[00:01:24] Now this will export everything from react testing library plus our custom render. So now we can just use that for everything and not be like is this one in testing-library/react and this one was in my utilities? Now we just use test utilities and one of the things you'll see in the larger app is, and I like this pattern a lot, is this test directory in both my tsconfig. 
+
+[00:01:49] And my vitest.config, you can see that I say, I can just do test/utilities. And it looks like it's a third party dependency, but it's not. And it is like I get that from anywhere without having to traverse up and down. I just do test/utilities, I get everything from React TensorFlow library, plus that monkey patched version of render that I can use. 
+
+[00:02:15] So now if we want to render the component with an initial count, this is very much like what we did before. To be clear, though, for those following along, which is because we talked a little bit about making the custom render. What we'll be implementing now is closer to what's in the file, counter.extension.tesla.tsx. 
+
+[00:02:33] This one with our custom renderer solution is without the custom render that we just wrote. So either one of them work, they both pass. If you wanna kinda look at the final results as we live code, but our implementation is closer to extension than solution. Cuz we did things slightly outta order, cuz I'm live coding and stuff. 
+
+[00:02:51] Things get a little wild sometimes, cool. So we can render the component with an initial count. And honestly, copying, and pasting never hurt anyone. So we can go ahead, and at this point we give it an initial count. And you need a gotta love TypeScript. I mean, theoretically, IntelliSense would have done it in JavaScript, it's not important. 
+
+[00:03:12] And we'll give it, a 4,000. What's it angry about? I believe that wants a number. So then we can go ahead and type 4000 here, right? And this test passes, right? It's just basically a way to get warmed up with what I did before. And this one, again with the resetButton, is a variation on a theme, but let's do it together. 
+
+[00:03:37] And now, remember, in this case, we're not using the custom render, so we do need to swap that one out. So we can go ahead and just do ./test/utilities. And that utility solution is the one that I wrote with us together. So anything generally speaking, if you're looking for what we're live coating, the closest approximation is in those solution files. 
+
+[00:04:04] Where I have a written version you can use as well, but I have the one that I wrote. So at this point we can render the counter, I'm gonna give it another initial count because otherwise, this comes to our classic problem. Is zero because my resetButton worked, or is it zero because my resetButton didn't work. 
+
+[00:04:28] [LAUGH] Right, now I could choose to increment and that's actually fine test, right? Because again, you now know with one test that does all those things. And maybe someone will choose to lecture you about how your test should be isolated, and you don't have to listen to them, right? 
+
+[00:04:42] You do what you want, if you find value in it, have at it, right? And then we'll say and one thing that you could do is, I don't necessarily the before all because I'm stuck with it every time. I can't pass arguments to it, but if I was doing this in of course, 32 tests, hypothetical number. 
+
+[00:05:06] Could I make a function called setup where I pass it in a value and it gives me back some number of things I know I'm gonna need? Yeah, that's even easier because then that setup or whatever you call that function, you can command click on it and then jump up to the implementation of it. 
+
+[00:05:24] First is like a before hook, good luck finding why it's in ClojureScope, right? But yeah, so you could do that if you wanted to. Maybe you should, there's what's the rules, which is start with no abstraction, then don't over-optimize light too early, cuz all abstractions sacrifice some amount clarity. 
+
+[00:05:49] So then what we wanna do is we will await const, that's not how JavaScript works. User, I don't know why I need to hand be my own prettier here and that was a user.click and then we will look for that. I could do it inline, I could store it in a variable, it all depends. 
+
+[00:06:17] Again, if I was using these buttons for a lot, I might do them all and might just export an object that has everything. Get by role, and we will say that we're looking for a button and the name should be reset. And again, if you wanna do what I did before, I can do that way I'm not tied to the peculiarities of how it's formatted. 
+
+[00:06:46] What if it was like CSS making it all caps and it was really. Whatever, or somebody changes the, I don't want my test to break cuz my stuff doesn't work. I don't want my test to break because we change our stance on title case. You know what I mean, so I can do that. 
+
+[00:07:03] And right now the test pass because we did find we were successfully clicking the button. We did find the current count, right, the only thing left to really do is expect that current count to have text content of zero. And our test passes. Now we know that we can pass in an initial value, unlike if we were just thinking on a test coverage perspective, also we don't know that anything works because Yeah, I'm just that good that I spiritually knew it was gonna pass. 
+
+[00:07:43] Also, I've done this 1000 times, literally with this component, this seems off the cuff, but it's not. So we've got that all in place unlike if we think about test coverage perspective and again, break stuff up into small tests if it is helpful for you, don't do it because someone told you to, right? 
+
+[00:08:06] So we could theoretically grab that incrementButton. Instead of passing an initial count I mean, you could do it if you wanted to, right? Let's do the most, how much can we get away with here? And I'll treat myself as some white space in a second user.click incrementButton. You know what? 
+
+[00:08:34] Click it again. And then let's go ahead, If I've already rendered the thing, might as well put it up here. Just have some, [LAUGH] fictitious version of organization here. And here, we can go and we'll go ahead and first of all, expect. Current count to have text content 67, what you angry about? 
+
+[00:09:26] Yeah, can you click something, right? ResetButton, right? Now with one test I am relatively confident in most of the functionality of this component, right? If this was the only one that I did, I'm morbidly curious how much test coverage we got out of one test, in this case, simple components. 
+
+[00:09:54] Sure, and we'll do a larger thing on test coverage in a hot minute, but we can do this and we'll do --coverage. --runs actually see stuff. We got to do the two dashes, right? I have 100% test coverage from one single test. Sure, ridiculous component, got it. Right, but let the people tell you, you need to break stuff into a bunch of tiny tests. 
+
+[00:10:28] It gets the job done, I have confidence in this. Say I could refactor this into my heart's content and know that as much as one can know anything, at least the functionality works. Now I could screw up the CSS on this in all sorts of untold ways. Again, 100% test coverage doesn't really mean anything, but I think it's a good start. 
+
+[00:10:49] And we'll play more with test coverage later. It'll be kind of an interesting experiment that we play around with, Dustin. >> Do you have a preference in general for selecting DOM elements is it generally best to just select by role or you otherwise use the data ids when it's inconvenient? 
+
+[00:11:07] >> Yeah, we use a data id when there's nothing really like a random div doesn't necessarily have a role, right? You can select by the text and something, but is it the thing you think it's going to be? Since we got this test and since it's running, let's just get it spinning up again. 
+
+[00:11:31] Yeah, particularly because this one doesn't have anything written in it other than the count, which I is what I'm asserting. So I could hypothetically, let's go look at the component for a second. Right, let's say I needed that header for some reason, I'm pretty sure. When I go off-roading with live coding is always when the towards the end of the day is when we know that the best stuff always happens. 
+
+[00:12:04] So let's find out how this goes together. We could say const header=screen.get ByText, As angry about that, I wonder if I need the full string in this case, because you notice that I can't find it. So again, even testing all these things on there- >> Regex it. >> Yeah, I'm wondering if that TM at the end is part of my problem. 
+
+[00:12:56] All right, so here I can actually find it, I think it was just maybe because it was a partial word. Let's see what happens when I put the TM back in if that was my issue. Being clever. Yeah, so we'll do the partial match in that case. I think otherwise I'd need the full string. 
+
+[00:13:16] So yeah, you could find it, but in this case, because I'm trying to assert that it's zero finding the element that says zero and making sure that it's zero. I guess I could say, yo, something should say 67 on the page and that would do the trick too, but this feels the best for me. 
+
+[00:13:33] But yeah, so we have this header, and now that's actually adding. Again, we had 100% test coverage and that header could have vanished. So to be clear about 100% test coverage, it's not as great as it sounds, but we did get there with one test. So one thing I will do real quick is just to show, we could do something, I'll just put it up here for a second. 
+
+[00:14:10] We'll say nourish count equals number. Cool, colon number rather. And then we can say, for instance, return, user, currentCount, IncrementButton, resetButton. So now if I need to use this with different situations for the initial count, I could just use this function, I will get all the things that I need. 
+
+[00:14:43] Whatever is helpful for you, I think makes sense in this point. One last thing and then I'll give you a little bonus thing to play around with as a extra credit assignment as well. It'll show up later, but that's a fun thing. One thing I just wanted to show you real quick is I want you to look, let's just look at the fully completed extension one. 
+
+[00:15:11] This is a version of what we just wrote without my little side quest, and how it renders a react component, right? This one, Is how it does the same thing, but with a svelte component. The only effective difference is I'm not writing JSX in here. I'm just passing it the component class, and the props go in an object next to it. 
+
+[00:15:53] So JSX is the only, the tiniest amount of JSX syntax is the only real like effective difference between how I would write these tests for React and how I'd write these tests for svelte, vue, what have you. So if you're worried that, we're talking a lot about testing React, we're not. 
+
+[00:16:15] It just happened to be a React component.
+
+---
+
+# 24. Testing Project Exercise
+
+[00:00:00] >> Component testing, like I said, seeks to hit that sweet spot of fast unit test, but from a user perspective, what you actually care about, right? And yeah, you can argue it either hits that happy medium or does neither particularly well. I think, yeah, that's kind of how it works and both are true. 
+
+[00:00:27] And that's why it is one part of your testing portfolio, your testing toolkit, if you will. So we're going to kinda jump in just into another example that has a few more things kinda going on. We have another example in source examples packing list and this is kinda one to-do list is been overdone in terms of demo apps. 
+
+[00:00:53] What about two lists and things moving back and forth between them. So there's a way to kind of move some stuff around and figure some things out. I alluded to this earlier, so I will kinda call it out now that second bullet with the button being disabled and enabled more actually really a third, but the enabling of the button. 
+
+[00:01:20] In my experience at the time of this recording, wasn't correctly working with Happy DOM and was working with JSDOM. So if you've kind of I have JSDOM as the default, but if you at some point change that just because, and you find it not working, just make sure using JSDOM and everything should be good. 
+
+[00:01:42] The next part is both are available in most situations so you can use whichever one and kind of choose along those lines as well. But yeah, basically we've got this list. I'll kinda show it to you real quick so we can kinda get a sense of what we're looking at. 
+
+[00:02:00] And this is true for everything in this case. We can go in enterprise ui development, and we do an NPM start. If we go here, you can see basically all of the little demo apps are simultaneously together. So if you look, this is the app right here, where we can have some things like I should bring my phone. 
+
+[00:02:29] You can see the button kind of enable, and then we can edit it, and we can save it, and we can mark it and it goes to the packed items and we can mark everything as unpacked and everything moves back over that first one. If we had two things, you can see it a little bit better. 
+
+[00:02:45] iPhone charger, that's important. We can move them, we can unpack everything, we can add new stuff, we can remove things from the list, right? So this case, this is the little sample app that we're playing around with, but at the same time this could just be a component in your larger application as well. 
+
+[00:03:05] And so what we wanna do is in the kind of exercise itself, I have just a few initial things that we might try to do to just kind of get the hang of some component testing that's more than just a single click. We're now checking to see if things are enabled or disabled. 
+
+[00:03:20] Give you a hint there's a match over there for that. And kind of a few more nuances of like better simulate a few more of the interactions that you may have that kind of barring network requests kinda get us more towards the full picture of render a component into the DOM, but not really the DOM, the fake DOM that's a lot faster in a not browser. 
+
+[00:03:41] Kind of manipulating it verifying that things are where they should be and getting a sense of that. So when you spend about probably 10 minutes to just get familiar and comfortable and then we will do it together and then talk about anything that came up or any questions that you have around that.
+
+---
+
+# 25. Testing Project: Input Field
+
+[00:00:00] >> All right, so let's go explore a few things as we try to get these tests passing just because I have more horizontal space and vertical space. Normally, I use the terminal but there's a vitest VS Code plugin, and there's a testing sidebar in VS Code, we can actually also see your tests, and that works too. 
+
+[00:00:24] There's a really great Jest plugin as well, either one of those depending on what you're using. So do we have an input field? Now, we have seen this app. And again, in true test-driven development, maybe you would render the component, make each test pass, and then you would know that you had a whole bunch of tests around this thing. 
+
+[00:00:46] One day, I aspire to do that. But generally speaking, I think that test-driven is great for making sure you have tests, but the main value of tests is to continually make sure that something didn't break behind your back, right, or accidentally. And so in this case, we can look for a new item and make sure it's on there. 
+
+[00:01:06] Again, this is one of those tests where if it fails, we know that we have some set of a problem here that we need to kinda go deal with. Ones like this, I think I joked about before. When it came time to actually opening up the pull requests, I might delete some of these, some of them are to kind of get in the zone, if you will, right? 
+
+[00:01:29] And does my test suite work? Is my render function working? How's everything doing? They're mostly to kind of get into a, quote unquote, flow state or something along those lines. We have this getByText, which will find some element that has this text in it. The kind of interesting part is, and we'll see kinda later too, is there's getBy and then there's queryBy. 
+
+[00:01:57] getBy will blow up if there's more than one of that thing, right? queryBy will actually just find the first. There's also get all by, query all by, so on and so forth. This is one of those things where it's like, I mention this now cuz eventually it's going to be a thing that bites us. 
+
+[00:02:20] Just kinda trying to put a narrative arc to our time together here. So we got this place. So if I look over the app, I have a bunch of different options for figuring out what I might choose to do here. Now, I've got this element, it's got a label. 
+
+[00:02:43] That's great, cuz who doesn't like accessibility? It's got a placeholder. Cool, it might even have a test ID, right? All those things are things I could probably find out. And so we can do a number of things in this case. I'm gonna render it, and let's do screen.getBy. 
+
+[00:03:06] And you can see some of the different options here, we've got the AltText, DisplayValue, LabelText, that could be useful, or PlaceholderText. Either one of these will work in this case. Part of this and these are all, I want to single one. Part of this is also in the large app that you're working on, what's less likely to change? 
+
+[00:03:27] You know what I mean? >> Yeah. >> Maybe this is off topic, why is there not a getBy ID or class name like you would have in the dom? >> Yeah, I mean, Jen, the class name one, I think we talked about it a little bit, which is like, that's just expecting, yeah, the by style issue. 
+
+[00:03:45] The ID one, I don't know, right? The IDs also have semantic meaning, we've got the test ID. I think it's trying to force you into best practices, right? And there are ways to do it, but generally speaking, I think about that all the time. I don't actually know insofar that. 
+
+[00:04:05] I will also say when we get to playwright, you're gonna see some of these selectors again, right? So there was probably some thought leadership that went into that decision. So we've got a bunch of options here. What do you know we're thinking? We wanna do placeholder or label. 
+
+[00:04:17] Which one? What inspires us right now? >> Label. >> Label, cool. getByLabelText, let me go glance at that UI again, it's called New Item Name. I feel like I like that answer, that's probably the right answer. I like having to do a by label cuz it means that you actually had to put an ID on that input field and an HTML "for" and actually make it accessible, right? 
+
+[00:04:43] It's mostly forcing you into making good choices on the implementation side rather than the perspective from the testing side. So I mean, if I save this test to kinda reiterate where we're talking about before, even if I save this test, it's still valuable. Because it's a nice kind of smoke test to make sure that this thing is on the page, this thing rendered the way that I expect it to render, so on and so forth, right? 
+
+[00:05:11] Some of these tests, even without an expectation, can still provide a certain amount of value in your application, right? Because yes, and if this was a full on course just like on unit testing, I think we'd be a little bit more disciplined about few things. But sometimes I think when you have a large other maybe and we get to playwright stuff, you'll see how we can do some really fast stuff to get some test coverage. 
+
+[00:05:35] That maybe is not gonna win you awards for best tester on the planet, which is definitely an image I'm gonna make later. But sometimes it's about, even if you had breath instead of depth, right, how quickly can you get as much of your app covered as possible so in case you need to do that upgrade or changing? 
+
+[00:06:02] Sometimes it's not about having the best tests in the world, it's about having at least a thin layer of problematic tests everywhere is maybe step one. And then you can figure out, okay, what are the most important places, and fix that up a little bit, but sometimes it's about put out the fire first, right? 
+
+[00:06:21] And so even some of these real quickly are decent, and you could probably whip up a bunch of these for some of the, either squareliest or highest traffic components in your app. There was this rails performance app called Skylight, and it was like, the way that would bubble up we needed to focus on was I believe the term was agony, right? 
+
+[00:06:46] Which was how slow is it and how often is it hit in production, right? Because suddenly, it takes 20 seconds to load, obviously, 20 seconds, the browser is terrible, 20 seconds is still bad, and nobody goes to. Maybe it's not as bad something takes three seconds to load as on the homepage, right? 
+
+[00:07:04] And so I think that's usually a kind of interesting part of where you choose to dedicate your time and energy. So theoretically, if it has an input field with this label text, I am technically not wrong in this case, right? I can say this is basically what I would have wanted for myself as well. 
+
+[00:07:30] So this make sure it's on the page, I think I've spiritually fit what this test was asking me to do. Now, again, and I will say this because some of these are just to kinda get yourself started, would I keep this one forever if I had this next one, or if I had the ability to add one onto a page? 
+
+[00:07:51] Honestly, even to that point about what is the user's perspective, the user doesn't really care if there's an input field for adding an item, they care if they can add an item, right? And so you might choose to get to a point where you're actually testing the full implementation. 
+
+[00:08:05] I used the term end-to-end not in the testing term, but closer to the full experience. But again, if you're starting with an application that maybe doesn't have great test coverage to begin with, sometimes it's about even a high-level just set of things to kinda make sure that nothing is totally falling apart. 
+
+[00:08:25] We'll get you there faster than trying to do everything right all the time.
+
+---
+
+# 26. Testing Project: Disabled & Enabled Button
+
+[00:00:00] >> So it has an Add New Item button that is disabled when the input is empty, right? Cool, so things that I'm thinking as I look at this test is maybe I would want to make sure that the input field is empty. But then the other thing I'm thinking is I would wait for this test to break once or twice before I worried about all that. 
+
+[00:00:19] You know what I mean? But if it was one of those things, where for some reason, my test isolation was not good or in certain cases, right? If I was let's say, as an edit blog post, it might not always be empty, right? In those cases, I would maybe add some nuance, or set it to empty, or something along those lines. 
+
+[00:00:39] So but at this moment, that feels like a little over the top. So a pass and we'll render the packing list and if one wanted to, they could do it before each and keep an enclosure scope. I don't want to, like I said, in case I do wanna start passing it in props or something like that, maybe start to populate, again, if it was an edit blog post or something like that, I would then have to unwind all of that and put it back in. 
+
+[00:01:09] And honestly, this one line isn't bothering me enough to prematurely optimize that cuz, yeah, the cost of getting that wrong is higher than the good parts of getting it right. And like I said, yeah, definitely have great abstractions for your code, but your tests should aim to be just as explicit as possible even if they repeat themselves. 
+
+[00:01:37] Cool, so, let's see. I'll test both. Let's say we've got this new item input, Which is basically what we had up here. So I'll just grab that real quick. And we've got that in place, and then we're also gonna wanna have the Add New Item button. Add New Item button with an N. 
+
+[00:02:06] And they will do that it's kind of screen.getByRole, and this one will be a button, With the name. And we're gonna learn something together. Well, I already learned it as I was getting ready for this, which is, It does ignore the emoji. >> No way. >> Yeah, the Add New Item will work in this case. 
+
+[00:02:35] We'll verify that before we're all really proud of that one. Yeah, it gets that. It will ignore the emoji. I think that's how the browser does the names and the roles rather than anything else. You'd be like, Steve, why didn't you know that? Because no one allows me to put emojis and buttons at work. 
+
+[00:02:52] [LAUGH] It's only on my sample apps that I can shove emojis wherever I want to on buttons on anywhere, cuz one, I'm not a designer who can make my own icons. And two, I like emoji, but it's not a thing that I realized until I got to make my own little silly apps because Candace would be very mad at me if I started shoving emoji all over the UI without checking with her. 
+
+[00:03:15] Cool, so we've got that in place. But yeah, we all learned something together. And I can either expect that the input is empty or I could purposely set it to empty. Like I said before, I don't really have strong feelings on this. So [LAUGH] with the lack of strong feelings, I am gonna do what's in the solution file just for the sake of our viewers here so that they don't offer too much here. 
+
+[00:03:48] To have value of an empty string and then I can expect in that case that the Add New Item Button, To be disabled, right? And like we said before, these are all the helpers that were brought in by the testing library/Jest DOM Matchers that we can kind of pull in, Mark. 
+
+[00:04:17] >> I came across a team where one person writes a test and another person makes the test pass. >> Yeah, that's like- >> What's your opinion of that? So the, I forget what it's called, but what you're supposed to do in that situation is one person writes the test and then the other person is supposed to do the most egregious or naive, or silliest implementation that makes the test pass so that the person writing the test has to do an even better test. 
+
+[00:04:51] Right, and so I liked that idea. It's one of those things which is, I think it's fun, I wonder if their teams would do that every day. Do you know what I mean? It's a fun game, I'm into it and I think there's value in doing it. But I don't know, maybe in companies where everyone pair programs all the time. 
+
+[00:05:12] As an introvert that's, I don't know, but I think on a very practical level, I think it's genius, right? I think my social battery, I have about 90 minutes of that in me a day at most. But yeah, I think it's super cool. And it will get you to that as you kinda make a game out of it, it will get you to those better tests. 
+
+[00:05:32] But you can also, I feel like the Galaxy Brain version of that is to be able to do that with yourself. That said, most of us are just trying to get our jobs done here, [LAUGH] and probably don't have the discipline to write a test and then write the most ridiculous implementation of that despite ourselves but it's a thing. 
+
+[00:05:55] So we've got both of these in place. Let's go make sure that passes as well. And so we're starting to get to the point where it's, I have to be defined. So we want to be disabled. So, yeah, who tests the tests? >> getAllByLabelText versus getByLabelText. What was the difference again? 
+
+[00:06:16] >> getAll will get you an array. >> So that would fail unless you wrapped new item name in an array, would that make it pass if you had to getAllByLabelText on 20 there? >> 20, get by label text, right? >> Yeah, I actually had getAllByLabelText. >> I mean, you'll still have them. 
+
+[00:06:37] >> And it failed. >> Yeah, cuz it won't have a value, it'll be an array. >> All right, [CROSSTALK] >> You might have a two length or something like that. To getAll is like if you had some way to identify them depending on how you got them. It's super interesting. 
+
+[00:06:52] Let's say if we added three things to the list, right, you would maybe wanna get all and check the length, right? There's a time and a place for it. This just isn't it. And that's a good call-out cuz, at one point, I just haven't done this enough in my life, I will probably make that mistake today. 
+
+[00:07:09] I'll probably be talking and I'll hit that tab, it autocompletes something and you'll I'll pretend like I did it to you on purpose. I won't have but, yeah, all right. So then enables the Add New button when there's text in the input field. So like we said before you can create some functions to kind of render it and go get all these things and give me a object that I can destructure and grab what I need out of. 
+
+[00:07:34] I will kind of leave that as an exercise reader. We did a little bit yesterday. I don't think anyone used to watch me do it again, but for now, a little bit of copy and paste also works in this case as well. So here, we'll get both of them. 
+
+[00:07:48] I don't need to expect that they exist anymore. But what I probably want to do is at least go in there and we have that, remember user event? So I can simulate the idea of typing. Could I fire a change event at that input field? I absolutely could. 
+
+[00:08:10] But again, to that even that point we made a little bit earlier, there is a certain amount of value in doing it from the user perspective and also considering it is the difference of just using a different method that I already have. I get a lot of value of not really any work. 
+
+[00:08:29] So we will go ahead and try that one out. And so what I will probably do in this case is I will, and, again, remember the big difference between fire event and the user event library. Is that the user event library because it's doing a series of different actions, instead of one event that's getting fired does, in fact, return a promise. 
+
+[00:08:50] So you will find that nothing works the way you expect if you do not await the user typing. So we'll go to the newItem input and we will type in MacBook Pro. Cool, and then, at that point, we should be able to expect the NewItem button or a NewItem, yeah, our addItem button, To be enabled. 
+
+[00:09:24] And then we'll go ahead and we'll run that test. And I got it. There we go, we got a little check mark. And it's kinda like on a dopamine level, very rewarding to kinda work down this list to get the checkboxes going.
+
+---
+
+# 27. Testing Project: Item in List
+
+[00:00:00] >> So then we wanna see that it's adding that item to the list. And here is where we get into a philosophical conundrum, which is this test that I'm gonna write is flawed. And before I was like, yeah, if you just had one test that went through the entire flow, that would totally work. 
+
+[00:00:23] Except that if I had done that, I would not have found that this test was flawed. This test, when I wrote it, I did not aspire to write a flawed test just to mess with you, right? I supposed to write a test to teach you something, and then I found out later it was flawed. 
+
+[00:00:39] And I kept it flawed, because then there was something more important to talk about based on that flaw. So we will do it, and I'm not gonna tell you what the flaw is just yet, because I feel like I would like to keep you in suspense. But if you can see it beforehand, you will get 50 points. 
+
+[00:00:59] Points work the same way they do in Super Mario Bros., which is they don't do anything, but you can get them. And so if anyone both in the chat, and in the room, and also if you're watching this later, you can also have 50 points if you get it before I tell you the answer. 
+
+[00:01:17] Cool, so we've got that in place and like I said, we copy and pasted some of the initial selectors, and we'll say, await user.type. NewItemInput, at this point, we'll grab, Let's grab an iPad Pro this time. And we'll type that in, and then we'll wait and we'll hit New, we'll hit that button. 
+
+[00:01:53] We'll click it, and we'll New item button. Boom, and then we can expect that, so by check boxes because I'm a good person, relatively speaking, have labels with the text. If you click the label, it also checks the checkbox so I can do get by label again. getByLabelText, and we want iPad pro. 
+
+[00:02:27] And we'll say that should not be checked in this case, not to be checked. Out of just pure curious as a bonus lap, I am pretty sure that should empty out the field and, I'm just fill and disables the button again. So if one wanted to go for a bonus round, they could then maybe expand this test to see if the input feels now empty again and the button is disabled. 
+
+[00:03:00] I think that would be good as well. Obviously, there's a lot more things that you could test. But a lot of this is just watching me select items and firing user events at them, which I think you've gotten the point. Okay, so that is basically more of a accurate in real world version barring network requests and other things you don't control, that's later. 
+
+[00:03:23] Where we can kind of just grab a component and kick the tires on. Again, I think component testing where I choose to use it the most is in particularly stuff like form validation, which is everyone's favorite part about being a front end engineer. And stuff along those lines where you can just do all sorts of stuff really fast, run through everything, get that immediate feedback that the form still works as expected, right? 
+
+[00:03:45] You could do the watch in this case, and just as you're making changes, see what you have. And to that just psychological aspect, writing the test first, getting them, failing them, watching them as they slowly turn green is very rewarding. Okay, so all my tests passed, it's not clear how I quietly sidestepped the issue here. 
+
+[00:04:10] But if you squint, you can see that I made a choice to avoid an issue here. Seems like super convenient for all the copy and pasting that I did that I chose for one test to use a MacBook Pro and the other one to use an iPad Pro, right? 
+
+[00:04:26] Seems like really, really just convenient that I made that choice. What happens if I change that back? We'll go ahead and we'll run that. This time, I might do in the terminal so I get, that one's running the test in isolation. I'm already ruining my own surprise. I'll go into source, and then we wanted the packing examples, packing list, npm test. 
+
+[00:05:04] Why is my tests passing all of a sudden? It's gonna ruin my whole surprise here. We've got it, because I know they got really ahead of myself here. Let's go ahead and write another one, remove it. And now, I've ruined the surprise. >> You did the right one. 
+
+[00:05:22] >> What's that? >> You did it the right way? >> No, I just thought that those tests, I actually I had it. And I'm like, you know what, it was just running the second time. And we'll get it and then, since I ruined my own surprise, I've tried to built it up too. 
+
+[00:05:38] Look, it fails, which is weird, cuz all I did was copy and paste the same test. It's totally passed, right? And this is what we're talking about the difference between getBy and I thought I was leaving something for later. We've got to getBy MacBook Pro, and it says, let's read the error message. 
+
+[00:06:00] It says, scrolling up, is it down here? No, I guess scroll up a little bit more. Which is nice, I get to see the DOM in this case, right? Look, found multiple elements with the text MacBook Pro. Here are the matching elements, and they look roughly the same. 
+
+[00:06:20] They have two different IDs. But other than that, they're on the page. But why? How did that happen? I don't understand what's going on here. Clearly, and we'll see that if I skip this other test. Then everything is fine. So one of the things we look for in our tests is this idea of test isolation, right? 
+
+[00:06:45] The idea is running two tests should not break each other, right? And this is one of those things where it is very easy to be like, know you what, I'm just gonna leave both those tests as I was going, open the PR, hope nobody notices. Because you don't have the checks that we're talking about the GitHub actions. 
+
+[00:07:05] You try to slide it in there, you get the ticket marked down, you get it merged in, then you go on your weekend, right? That's why you need the build process in there with the GitHub actions to test for the code coverage. Are there ways even tests like, hey, for this given file, are there enough tests, so on and so forth. 
+
+[00:07:21] I might if I didn't have to like stand up here in front of you all, and it was I might choose to delete one of these tests. So in this one, let's make this one a real test. Removes an item. So the goal is effectively at the end here to say, We'll say, const, removeItem is screen.getByLabelText MacBook Pro. 
+
+[00:08:03] This doesn't really matter, cuz this test will blow up no matter what for the reasons it blew up before. And then we'll say, await, I need the, let me look at the DOM real quick. Yeah, there's only one Remove button on the page in this test. So let's actually getByLabelText, Remove, await use.click, removeItem. 
+
+[00:08:43] And then we'll, There's a blow up, and then we'll deal with it afterwards. This test is also good, because it still blows up for the same reason. And when it gets passed on, we could add more to it. So my problem here is that I don't have test isolation, which is tricky, because like I am rendering that component brand new every time as a fresh component and different from the last one.
+
+---
+
+# 28. Test Isolation
+
+[00:00:00] >> What is the correct way to wait for an element to be rendered on DOM after a placeholder component for example waiting for the request to be fulfilled? >> Cool let's answer that question first and then we'll talk about our big issue because it's a bigger deep dive, so the question was, what if it's not immediately there? 
+
+[00:00:16] What if there is a network request? What if there's an animation? What if there are something that has to happen, right? You have a bunch of options in this case. Won't to solve my problem now but you do have a bunch of options. So, if you do need to wait for something your best bet is to use something called Wait for and wait for we can even do it here Yeah, we should have that button gone. 
+
+[00:01:02] Wait for. So ideally we want something like wait for the remove item not to be in the document, all right? Something along those lines which yeah, if there was an animation if I hit the button and then it slowly faded away and then was removed for the DOM or something like that, this test would fail even though spiritually it should pass. 
+
+[00:01:32] What wait for does is it basically accepts a failure for a certain amount of time, and then if it truly is still there for some reason, then the test would actually fail. I think the timeout by default, I wanna say it' five seconds, right? It will keep trying for about five seconds if it's still there, and you can change the timeout and stuff like that. 
+
+[00:01:56] But it's a way to be, this is not gonna happen immediately but it should happen soon-ish. And sometimes to add just a little bit of grace to your tests, so that you're able to kind of get them past it without super weird implementation details like, could you do squirrely things like moving the clock forward and all sorts of crazy stuff? 
+
+[00:02:18] Sure, that seems to be a little much. And then would you be tempted to do really dark stuff like make your code perform differently in tests than in the in reality, which is why are you even testing stuff at that point? Would you likely just delete that test because you're like, I don't know. 
+
+[00:02:36] And then go on your weekend, that's probably the thing you would do. So wait for it which is again, returning a promise of you had to do other stuff beyond that, you can wait for and then it will basically, all right, this expectation should pass eventually, and then we'll move on. 
+
+[00:02:55] If one wanted to write this themselves, right, basically resolve the promise when you call that function, you don't throw an error, right? And then reject the promise after a certain amount of time. You could write it yourself, right? You don't have to cuz it's in the library. And again, this came from me just writing the test saying let's remove an item, do one last little bonus lap, and then we'll move on to the next topic, and then I noticed that this test failed. 
+
+[00:03:30] And I noticed that only when it came down to adding an item, and that there was no test isolation cuz they were both there in this case. Which is weird because you saw me use the app and it wasn't there, right? But if I do, We saw it in the failing test but this is still a great way to choose, to see stuff. 
+
+[00:03:58] All screen.debug does is it console logs a serialized version of the DOM. So if one, I'll get it here as well, but you could see it at any given point. And if I squint, you can see that I do in fact have two MacBook Pros in there. That's why the test passed with iPad Pro and it failed with a MacBook Pro, right? 
+
+[00:04:20] So we could say, iPad Pro. That's not the issue, the two remove buttons that are now the issue but some version of that doesn't matter, I still have an issue I have to deal with. And we have to work through it. And so this kind of leads us into a different issue, which is that render does in fact, render a brand new element, right? 
+
+[00:04:50] The issue is that JavaScript is hard. Spoiler alert, an implementation detail of this app is if we kind of go and look through it, it's that, all right, let's go. Let's say index.tsx is the beginning point. You can see that I am using the store and I am using React Redux. 
+
+[00:05:22] And so we're re-rendering the component, but the store in Redux at least is defined just like, as part of your code living outside of your React render tree. Which is like the feature of Redux, right, which is this idea that if it lives outside of it, it's a global state that everything can hook into. 
+
+[00:05:44] The context API, if it was in your component, would re-render and you would not have this issue, right? You state you would not have this issue, it is only the fact that enclosure scope this store exists. Doesn't matter how many times we render or re-render that component, this variable is still in memory, right? 
+
+[00:06:08] And it has two MacBook Pros in it. And so when we re-render the DOM and it goes to talk to the Redux store, it's like, I got you two MacBook Pros. To which our get selector is like yeah I'm only looking for one I blow up if I find two, right? 
+
+[00:06:25] And we have an issue unique to our test and this creates a philosophical and moral quandary for us, not really there's a right answer, but we're tired or it's the end of the day or something along those lines, and we don't want to think deep thoughts. We want to just deal with the stuff, we want to get this feature done. 
+
+[00:06:44] We didn't wanna write tests to begin with, but we're trying not to have an application that falls apart in this course, so, cool. So we have a few options, let's think about this. We could mock out, use selector to make it so that, I don't even like finishing this sentence, right? 
+
+[00:07:09] Start mocking out the world in order to in service of our test, right? And the more you mock out the further you are divorced from reality. And while that can occasionally be fun, it is probably one of those things where I said before, most code bases start falling apart through a series of relatively reasonable hacks, shortcuts. 
+
+[00:07:32] Things that are like, yeah, I got to get my job done, ain't no big deal. Over time add up to the point where nothing works and you don't trust anything and you don't wanna update anything. So stubbing everything out or mocking out like Redux or something along those lines and try to grab the use selector hook and do dark things to it. 
+
+[00:07:53] Probably not great, it would work, but over time it just makes your test suit, worthless. Other things that I could do are try to hack at my components in a way that just tries to make it more easily to test, which is not great. The third thing that I could do is use this as a really learning opportunity to realize that my architecture was bad and fix that issue and have a happier code base. 
+
+[00:08:31] Because my issue right now is I don't have a great way at this moment to separate the idea that Redux is involved from this component itself, right? The idea of the component is that it immediately wraps in a provider that got the store as an import from closure scope. 
+
+[00:08:53] And for my test, that's how it manifested itself, right? And when we talk about patterns towards the end, this is gonna be one I revisit, which is why I'm kinda making a big deal of it now. Which is in a large application, the chances that I might have to reuse a component in some way, like converges on one, right? 
+
+[00:09:15] It will happen eventually. And if they're tied to each other, I find myself having a folder where it's three or four different versions of the same piece of UI hooked up to different state management library parts of the state. All sorts of weird stuff that you've probably seen in a code base before and maybe you've done them occasionally and felt bad about it but you didn't know what else to do, right? 
+
+[00:09:35] And so, when things are tightly coupled, I end up in weird situations like this. I'm happy a unit test found it, because if the unit test did not find it, I would have found it six months from now. And this is one of those things where sample apps, you'll never find it in a real code base. 
+
+[00:09:52] Six months from now you will find it and it will be too late cuz it will have already had like 17 more things applied on top of it.
+
+---
+
+# 29. Test Scope
+
+[00:00:00] >> I'm gonna use this as an excuse to kind of like, think about the architecture here a little bit. And what the first thing I want to do is separate this component from the state management library a little bit so that I can swap out any different provider and it'll just work with it and life will be great. 
+
+[00:00:19] And we could take this really far if we wanted to, we probably won't but there are a bunch of things you can do. And some of these are just kind of useful patterns, right? I'll revisit this at the end. But if you think about Redux, kind of like prior to Hooks, you had those higher order components where you would have just a view layer only version of the component. 
+
+[00:00:44] And then you would have the container component that would wrap it and pass in all the Redux stuff as a prop. We stopped doing that when Hooks became a thing, but it's actually a pretty good pattern that will make you happier and less sad over time. You can still do it with Hooks, we just don't because we're very lazy. 
+
+[00:01:02] We don't like typing, despite the fact that is what we do for a living. So we can do some version of that here and it will both get me to a place where my test will pass and then also leave me better off for using this component later on. 
+
+[00:01:16] And that seems like a double win. So the biggest problem we're gonna have here is in this little sample app is naming things is hard. And everything it's always hard. But in this case, what we wanna do is have the ability to have this component with wrapped and unwrapped from a provider. 
+
+[00:01:38] Now the nature of this component makes it so that I'm not gonna win super well here because cool, I can pull this out and I will pull this out. I will have a problem in about 20 seconds after that, which is if I go into the item list itself, or the item itself rather. 
+
+[00:01:59] Yeah, I don't know if I was going the right direction. And I go into the item it's using a useDispatch which assumes that we are and useItem is using use selector, right? And so you cannot have this component because Hooks are a thing. You cannot have this component totally separated out from any kind of provider whatsoever, but you still wanted this idea that you could snap it into totally different systems, right? 
+
+[00:02:30] And this comes from the fact that we chose to use Hooks. If we didn't choose to use Hooks, we probably wouldn't be here. And if we did it in unit test, we wouldn't even notice the issue. But here we are with an architecture that we need to solve for. 
+
+[00:02:43] So what I need to do is I need to wrap it in some provider, but like it would be nice if it weren't totally coupled all the time some closure state that I don't have anything. Because this is like, even if you mounted a different one, it would still be hooking into the same state. 
+
+[00:03:01] There's a bunch of grossness here. Luckily, we can start to unwind this a little bit. So let's assume that we'll have, since this is the entire application, I'll just call it application it's fine. I don't love the name, but I don't have better. I can call it packing-list-container 2, I don't know. 
+
+[00:03:19] The naming is not the important part. And so let's return in this point, we'll grab, just really the provider of this point. This will be the one wrapped in the state management. I'm not gonna look at my test while I'm doing this because stuff is gonna break. So now I've got just a pure React component. 
+
+[00:03:55] And if I really wanted to I could use children here to take these lists out, which would then make us I could render this component now that it wouldn't show me any items. And I have to do a bunch of other weird stuff. But I could begin to further break apart this component and make it a little bit more modular with children, a bunch of other things like that. 
+
+[00:04:14] But I've started by at least, separating out the part wrapped in the provider from the part that's not. So then I could say like, application will be the thing with default. And then we'll also export the Packing List because this is why I said before, having a version wrapped in all the state management is great for when you use it. 
+
+[00:04:32] And then if you ever just wanted the raw pieces of UI and be able to pass props in, you would also have a version that you could export as well as both the default and the named export. I'm using export default because it's very common with React applications. 
+
+[00:04:46] I tend to in my own apps just never use export default and have named exports for everything, cool. So we've got that in place and I haven't solved the issue yet because we're still putting in the default one. And if I just try to grab the PackingList, we'll get a new error. 
+
+[00:05:01] Let's go view the new error because I think it's worthwhile. So let's go and we'll adjust our test a little bit. At this point, we're going to get the uniquely exported one, which blows up lots of my tests all of them for those keeping track at home, which is like, hey, you tried to use useDispatch but you don't have a provider. 
+
+[00:05:23] That is true. I do not have a provider. So we've got that, could we export the provider? We could, but you know what, I'm gonna recreate at that point, my original problem, right? Cuz then I will still have one with the store enclosure state. And I will just be back where I started with a slightly more modular component like better than when I started but with the same issue. 
+
+[00:05:49] So let's not deal with that just yet. So one of the cool things about React testing library is that you can, I could do something where I can even wrap it, like I can pull out a provider, I can wrap each one. Now again, like the store is my issue, not the provider. 
+
+[00:06:11] So I need to deal with that somehow. And this just comes down to regular old JavaScript, in this case, where it would be nice to be able to create a store and give myself the ability to do that on the fly. So let's go in here and let's say, in our store we are just making one and exporting it. 
+
+[00:06:29] There's one store to rule them all, use it, it's in closure state you don't have a choice. What would be better? And could I grab configure store? I totally could. But then I'd have to grab the reducer, and I'd have to whip this together for every test and throughout my application. 
+
+[00:06:44] What I could do on the other hand is I could say. CreateStore, create application store, whatever makes you the happiest and this is a function now that we export and, Now I have the ability to get a fresh store and I have one that is available for use through my app, right? 
+
+[00:07:16] I have not lost anything. I have only gained, and I gained a lot for what is formatted to be four lines of code, right, and not a ton of characters. So we have that in this case, and that's super helpful. So now what we could do is we can pull that into our test. 
+
+[00:07:38] I feel like naming stuff was really hard. And then Intellisense made it harder because I don't want to use like really common reasonable names anymore because autocomplete is really nice. So we could go ahead and let's say for instance, we just we're gonna use this test right now as an only test because if it passes we know at least we have a path for it. 
+
+[00:07:59] I don't need to watch all seven fail all the time, or for different reasons. Cool, it fails for the same reason it failed before, there's not a provider. So we could say, Provider and that is gonna come from React Redux in this case. Provider, and then for the store, All right, now, we've got a passes. 
+
+[00:08:39] We've got a fresh store. I'm very lazy. I don't wanna do this seven times, because I didn't even write all the tests. There's also so I can edit one I can do all sorts of stuff. I'm very lazy. I don't wanna wrap everyone in a provider just yet. 
+
+[00:08:56] What I would probably do in this case is, I could do something like, Yeah, let's do this move, right, and I can create my own render. Let's do something else first. One thing that testing library gives me that is super nice is I can pass this option, a set of options to it afterwards, where I do, I give it a wrapper. 
+
+[00:09:29] And this is great for error boundaries and stuff like that. I can give it a wrapper now. Every component that goes to that render will get wrapped in that other component. Now I want to do that in mass so I'm gonna create myself a little helper function like we saw earlier that's just going to say like, hey, we'll have a version of render that we'll call it renderWithProvider for now. 
+
+[00:09:56] And that will effectively be very similar to what we saw before. Let's just start very easily we'll just React element. This is like, remember when we did that render that also brought in the user? We're basically doing that again. We'll make this better in a moment. And so we've got that in place. 
+
+[00:10:19] And this one will hypothetically, Return render, and let's just grab this. Right, so now we've got that or return all the same. It's basically API compliant already if you look at this. >> How is this different than before each? >> I could do it before, but then I have it, like that is literally rendering before each. 
+
+[00:10:51] I won't pass any other options. Like, if this took props, and I want this one to now take props, now I'm doing the same one before each no matter what. I don't have any real way to pass props in. In this case like it would work, right, but it doesn't work writ large. 
+
+[00:11:08] And so really all I could do is like as you saw me right before, and then swap this one here, >> What is the little dash before render do again? >> Just gives it a different name so I can call this render, right? >> Yeah. >> Just to give it a different name so I can call this one render and now if I look that one renders let's see This should just work at this point. 
+
+[00:11:44] Let's see what we got. I had a real issue and I had a dumb issue. Let's deal with the dumb issue first and get it out of the way and then we'll finish up with the real issue. The real issue was actually should be solved at this point, but the dumb issue got in the way. 
+
+[00:11:55] I made a big deal before about you can put emojis in a name and the role will strip out the emojis. That is still true. Not true for labels, right, which are just actually matching the test. So I have two options here. And honestly, they both go into, what you should probably have in your test is a little more flexibility. 
+
+[00:12:19] When your test break you want them to break for a really good reason not because someone put in an emoji in the UI. Because next time the designer goes on PTO I'm gonna put some emoji in the UI and the test shouldn't break or maybe they should, right, depends on like the spiritual version of that. 
+
+[00:12:34] So I can either use a regex or I could use the fact that emojis are stripped out and still be case sensitive. At this point, it's working with the case insensitive regex, I think that's totally fine. But yeah, it also shows that you want your test to break cuz your functionality doesn't work, not because of a tiny implementation detail like an emoji. 
+
+[00:12:58] This is what we are whipping up a brand new store. I did change it a little bit as I was playing around and separating stuff out slightly, which is I make the store as a variable. I have this ability to wrap it in a provider. Right, which is just the child at this point. 
+
+[00:13:15] The really cool thing you saw me typing earlier is that React testing library will, if you're using the same wrapper all the time, and you don't wanna, let's say, this is one provider. Let's say I had that thing where you start out with one context provider, especially if you're using the context API, and the next thing you know you have seven of them. 
+
+[00:13:35] Could you have put them in over, and over, and over again, sure. One of the things I would probably put in the utilities is either a wrapper, or something called all the providers, right? And then this wrapper option will then take your component and wrap it in that entire hierarchy so you don't ever really have to see that. 
+
+[00:13:51] But the kind of core piece to kind of summarize is My tests were failing because of a problem with my architecture. My problem with my architecture was that my state management and my UI were tightly bound to each other. And made it difficult to actually use this component, and that manifested itself in the tests. 
+
+[00:14:15] Like I said, this is a small example. Stuff like this has manifested itself in reality. But at that point is so like ingrained and because I don't have the test sometimes to catch these things early it's very very hard to refactor. And that just becomes like I guess this is us now. 
+
+[00:14:29] I guess this is how we live. And separating out the other thing and I'm not gonna do this all the way. Because we're already in the weeds a little bit and I don't want to be too React specific at this moment that I would think about doing just kind of like some food for thought for later, is like I said, it still has to be wrapped in some kind of provider because you can't take props. 
+
+[00:14:48] So things that I might choose to do later on kind of is my thinking around this which is cool, would I make these children, I might. A lot of times what I will do is like dependency injection is super powerful which is, if you look at the individual item for instance, right? 
+
+[00:15:09] Or even the item list, this like use item IDs is a use selector and it needs to be in a provider or else it will blow up. The trick in this case is like, what if the ability to fetch stuff from the state was something I passed in, right? 
+
+[00:15:24] If it's something I passed in, now, this component can exist outside of a React component hierarchy without a provider. I can pass it in it will use that hook. And then I can also pass in other stuff when I need it. And the idea is like you're just trying to take your code base, and this is true in a large application. 
+
+[00:15:41] You're trying to take all the ways that it's like jammed together and start to pull it so you can pass stuff in and you can kind of pull it apart and snap it together rather than the fact that pieces are glued to each other. And just to be totally honest with y'all, preparing for this, I'm like, I should grab some of these different functions from my codebase and pull them out of the large codebase and drop them into examples. 
+
+[00:16:05] And I realized that I had some work to do on my own codebase, right? There were things where I couldn't just lift this data transformation function. Because it had a bunch of imports that were then kind of like tied to other files and next thing you know, it's like you go to grab what you think is one piece and stuck to it or like 14 other files, right? 
+
+[00:16:25] And that is a sign that maybe things are problematic, right? I think the thing that I learned kind of getting ready for this was that a great great litmus test for you might think that your code is modular and like, yeah, there's the thing that takes it from the API to how I want to use in the UI. 
+
+[00:16:44] It's like it just takes these two things but now over time, some of these were not my fault, some of them were. Or someone just imported some other file, right? Well, that's now in the closure scope, right? So you gotta bring that file too. And then that file imports another file. 
+
+[00:16:58] You got three files. And that one imports two more. You know what I mean? And you get this network effect where it becomes very difficult. And it is sometimes take what you think the most modular part of your code base is, and try to pull it out and drop it into another folder. 
+
+[00:17:14] And see how much stuff breaks, right? Is a great way to see, did you do this as well as you think you did? But these are the little things you can find from the testing, and they also point out some of those patterns and ways to structure your code, so you can pull stuff and move it. 
+
+[00:17:28] It becomes easier to refactor. You wanna move into a totally another directory? Cool, it just works. Move it out of the project. Great, you want to pull it into its own library, awesome. But also, it also makes your code more testable, right? We didn't do that in service to the test we did in service of having a more maintainable code base that was highlighted by one of our tests, and we fixed our tests along the way, awesome.
+
+---
+
+# 30. Automated Accessibility Testing with Axe
+
+[00:00:00] >> Let's talk a little bit about accessibility. And I think I mentioned this earlier in the course, which is, my team we care a lot about accessibility, and we thought we were doing the right thing, we didn't realize that our build process was broken. Broken is a strong word. 
+
+[00:00:18] It was issuing warnings, overwhelmingly to our credit, mostly accessible, it didn't take a lot to get it into shape. But we had lint issues around the accessibility stuff that were just swallowed cuz they were erroring into the console and weren't breaking the build, right? And this is one of those things which is like, we joke that the build process is supposed to stop you on a Friday afternoon when you're lazy, but even in well-meaning situations, it just didn't know, right? 
+
+[00:00:48] Cuz you just didn't think to run, from the command line, a build process that broke would have caught it, right? And so you can do it, there's lots of different ways to do it. We have in a Svelte app, there's this thing called Svelte check which will tell you, but you can also have tests, right? 
+
+[00:01:05] And the tests are super interesting cuz you could also seek to have some nuance around what exactly is going on in this case, right? Or if we're trying to get certain ones and work through it over time, and you could start them all with TODOs for every component and start to uncheck them over time. 
+
+[00:01:21] I think you get a little more granularity with the kinda programming model that comes with unit tests versus some other things, but it all kinda works. But the cool thing, what I'm gonna show you here, and this goes to this maintainability over time. And so you don't have this thing where all of a sudden, some big government agency wants to use your product and they won't because you're not accessible. 
+
+[00:01:39] You can basically say, hey, our tests will fail, yes, you should still go through with a screen reader. Sure, sure, sure. But our test will fail if we have known violations, right? That is one of those things, automated nature of all these things keep your code base healthy over time. 
+
+[00:01:56] There is a library, you've probably heard it before, called Axe, it's a-x-e. And what you can do with that is basically it'll audit the known checks in just the way you wrote your code. >> You said Axe was an npm package? >> Axe is an npm package. 
+
+[00:02:15] It is also a browser extension. It has lots of things that you can do to kinda do static analysis of your code. In this case- >> [INAUDIBLE] >> What's that? >> You mean Axe core? >> Axe core. >> [LAUGH] I couldn't find Axe, so. >> Yeah, that was probably taken. 
+
+[00:02:31] In this case we'll use just Axe because we're building a test suite. Again, this is one option, we're currently in the point of component testing, so I felt like we can do it in here. Could you do it from your browser based test? You could. Could you do it just as a tool that does a static analysis of the entire code base? 
+
+[00:02:46] You also could. Those are a little bit trickier because the Chrome extension, for instance, you gotta be using your browser. The stack analysis a lot of time is an all or nothing or you have to put comments here. Like I kinda said in the preamble to this, if you're just doing the kind of like, hey, we just found out we gotta do this, you can start by layering the tests with a to-do and start to slowly get your code base over time where you need to go. 
+
+[00:03:10] What strategy is right for you depends on the code base, but let's look at one common way to deal with this, and then you can kind of apply it as need be. The kind of bonus exercise that we kinda just briefly talked about the other day was this ability to, if you look at the browser here, I've got just a silly, all the inputs, and they change and stuff like that. 
+
+[00:03:38] Everything is great. And what we want to do is make sure that there are no obvious violations there. And this is super easy to do. And what we wanna have happen is mount the component and check to see, do we have any violations, right? And so for instance, I've got this ObstacleCourse. 
+
+[00:04:02] We'll kinda do the normal, And I think where this is also super powerful, especially for a component test, is if you're building a design system for instance, right, where you've got these individual components, right? You wanna run these checks. A lot of times you're working on a design system, sure or maybe you have a storybook, right, or something like that. 
+
+[00:04:26] But you don't really have an app, right? You have a collection of pieces of user interface and different things. And so the idea that you could have the entire suite of the things and run through them all, render them, and do the accessibility check, have tests that break on every single build, mean that you're gonna ship a design system that is accessible. 
+
+[00:04:43] So let's go and we'll pull that in. And we've got this render that we've been using the whole time. And we'll pull in the ObstacleCourse. Like I said, it's just a component in this case. One of the cool things, and again, we're using vitest, but jest-axe will work just fine. 
+
+[00:05:02] There's a plugin called jest-axe that we can use, and we'll pull that in as well. So jest-axe. And it only has two things that exports. One is, Axe, which will run the analysis on the component. And then there is a helpful matcher in this case that we can use with expect to have no violations, right? 
+
+[00:05:35] I think that the same way that jest-dom has that slash extend expect, or expect extend, whichever one. I did the wrong one the first time, I switched it and I'll never remember because you do it once in a code base there the entire time. We can go peek at some point, literally, in setup actually. 
+
+[00:05:53] But you can also do it globally as well, but depending on what you have, we'll just do it the old fashioned way. Expect, and then we can extend that. And I point this out cuz also if there are common things that you want better than Axe in this world, you could write your own additional matchers that are unique to your code base as well. 
+
+[00:06:14] There's something you've commonly find yourself doing given the data structure that you have or something. It's really hard to invent fake versions of why you would need it. But if there's some repeated thing you wanna actually have expect and then some very unique to your application, you can absolutely do that. 
+
+[00:06:29] And we'll give it the toHaveNoViolations, right? So now that is available as well. Render has a lot of things, when we were playing with the types. You can actually get the container, you can get the actual result, the base element, so on and so forth. In this case, we'll grab the container. 
+
+[00:06:50] I could also probably grab the entire screen too, now that I think about it, but we haven't done this one yet. So let's take a look, countainer. I love TypeScript. The fact that I got red squiggly line and I didn't find out though that was undefined later is the best thing. 
+
+[00:07:06] The number of times that has saved me from just making a silly mistake has been super helpful. And then the results is Axe returns a promise. I gotta make this an async function. And so we can basically take this DOM really, and pass it in and say cool, I go ahead and, Do your analysis. 
+
+[00:07:36] Where have I made boo boos, right? And this one, I think is actually fine, much to my surprise, but we'll go and create an issue in a second as well. And then basically, all you need to do at this point, toHaveNoViolations, maybe we'll even spell result right. And we won't put a dot at the end, right? 
+
+[00:08:03] And now I should be able to run this test. And let's see, [SOUND] expected. No, wait. This is why you live code in front of people, cuz then they catch errors for you. It's like pair programming but even bigger. So in this case we have no violations. So let's go create one just for funsies. 
+
+[00:08:27] [LAUGH] Different versions of fun for different people, I guess. >> What defines a violation for this specific- >> Anything that breaks one of the heuristics. I'm going to do the one I accidentally do all the time, [LAUGH] which is input with no label or forgetting the HTML "for" or something along those lines, right? 
+
+[00:08:47] That would be like, hey, the screen reader is not gonna be able to read this. >> Baseline, I don't know if you can configure what rule set you can use. >> I don't know cuz I usually use the standard one. I would imagine you should be able to- [CROSSTALK] 
+
+[00:08:59] >> Uses one AA versus AAA. >> Yeah, AAA is I think the one we're aiming for. >> Yeah. >> This will get you most of the way there, you should still be testing with a screen reader and stuff like that as well. Cool, and so let's go ahead, let's just go in to the index.tsx, and we'll go and we'll just like, I don't know, we'll give ourselves a bonus. 
+
+[00:09:21] You know what? Go ahead and I was like, yeah, I'll just make an input field where you'll type, I'll have it on change. Everything's great, life will go on. Code, code, code, code, moving along, right? We can go in here, we'll run that test again. Do this save and we'll grab the right one. 
+
+[00:09:48] We'll see in a second. It's interesting that that one passes for reasons I don't totally understand. Let's toss it and put it in there. All right, so that one, for some reason. I have a label. >> You just put that back. >> I put it back. But here we have an input field where the browser couldn't figure it out. 
+
+[00:10:24] It could have been the form tag or maybe we were in a form tag, unclear exactly why that one did work, did pass the test. But in this case, just having one, that didn't have one, got me to the point where it gives you basically here where your issue is. 
+
+[00:10:39] And you could see there's a long list of things, I wonder if I accidentally appeased one of these in the implementation. But the nice part is, if you don't have tooling like this, it becomes an issue of hoping that someone catches that one input field in a code review. 
+
+[00:10:58] And if you are a good person and you have tiny little PRs that are hyper focused on one thing, then maybe that code reviews will work for you. If you have that one where you're apologizing to your teammates during stand up, for the size of the PR cuz it's 47 files and 3000 lines of code, the chance that you're gonna miss one of these is pretty strong. 
+
+[00:11:22] The best part about this is because it's built into a unit test process. We already have that build script. We'll break the build. You get immediate feedback, right? And we'll look at ways that you can get immediate feedback before you even get to the build process a little bit later. 
+
+[00:11:35] But the idea is we're building the systems that help us make good choices, because like I said, I have a team that deeply cares about this, and we messed up cuz I didn't even realize. Yeah, that issue was like, the passing doesn't necessarily mean that things are good, it just means that we weren't blowing up the build because of an accident. 
+
+[00:11:57] Lots of things were blowing up the build, just not that. And so kind of verifying these things and building these systems, we'll never have the issue again, because the build will break if it ever comes up again. And that will help us to kind of get to the point where we don't drift too far off the course.
+
+---
+
+# 31. Code Coverage
+
+[00:00:00] >> Test coverage, what it basically does is it statically puts little checkpoints throughout your code and triggers which ones of those got flipped to show. As we ran the test, what part of the code got exercised and what didn't, right? And it can be weaponized against your colleagues, and it shouldn't be, it can be more of a helpful tool. 
+
+[00:00:17] A lot of times, could you break the build on it? You could. Should you? I don't know, it depends. There are places in my code base, we can talk a little bit more, maybe during the question and answer time, about how I choose to structure my code base. 
+
+[00:00:37] The problem is I've been in charge for so long that my code base is structured the way I like it, and who knows if it's good anymore, thats why. So why you need junior engineers on your team cuz I don't have a feedback loop anymore. And so I, for instance, like to take all the functionality of my view layer components. 
+
+[00:00:55] I have a giant utilities directory full of every little helper method that I could ever want all in one place, and I just rely on IntelliSense to figure it out. I don't have a deep-nested folder hierarchy or anything like that. And for those little like, hey, I got one thing that makes things into kebab case and another thing that pluralizes, lots of little stuff like that, like that folder? 
+
+[00:01:21] Yeah, I would like to know that I've got 100% test coverage on, for other pieces, I don't necessarily worry about it. What I do use code coverage for a lot is, especially as I'm developing, as I'm thinking about something, what am I not thinking about? Show me from a different perspective, cuz a lot of times, when we're working on something, we've lost beginner's mind and we're just so in the weeds that we're not seeing it clearly. 
+
+[00:01:44] So one of the things you can do is you can run it with this --coverage. And at the beginning, it will run through your test suite as it always does, and then you will get this. Now, to be clear, you're could have 100% code coverage and still have bugs, right, like your code. 
+
+[00:02:01] [LAUGH] You could cover it all and just not have thought of that edge case, right? I'm not going to give you a book summary of the black swan, but that is basically the idea. Having 100% code coverage does not mean you don't have bugs, and having 0% code coverage does not mean that you do. 
+
+[00:02:15] It is a useful tool for seeing whether or not you do, I think sometimes the more important part is, this view is great, however, you will see the red, you will get salty. I think what's more important is that out of the box, there are different reporters, you can have it report to JSON, you can have it report in this fancy table, you can have it whatever. 
+
+[00:02:35] One of the things that you get for free, unless you configure it to do otherwise, is it will, in a coverage directory, which I have git ignored for reasons that should be relatively clear, you get an HTML output, right? Like I said, I will look at the red ones cuz I'm a bad person. 
+
+[00:03:03] But generally speaking, where I will mostly go is if I had a utilities directory. If I had something where it's like this seems awful, I'd be like, that's an important part of the code base and that number's somewhat low, right? Sometimes in a bad mood and I will run it and then I'll hassle my co-workers. 
+
+[00:03:17] But that's not my best self, so we're not gonna talk about that version of me. So obviously zero, there's nothing to look at there. What I'm sometimes currently interested is yellow, right? And in here, you can kinda see, okay, like this one, yeah, there's not a lot going on. 
+
+[00:03:34] But red is stuff that as we ran through all this stuff, we never executed these lines of code. And like I said, effectively the way this works, it breaks it into an AS, it takes your code. And imagine putting little console logs in every branch of a conditional, keeping track of where the console logs were triggered and where they weren't, and using those stop and endpoints and then annotating the code with that. 
+
+[00:03:58] Even if we go back into the revisited one, index looks interesting, you can see. Okay, when I refactored earlier, this thing, cuz I put it in a component test, right, and wrapped it in a provider, is 100% test coverage. It's loaded, we're doing all sorts of stuff with it that just the provider around the thing is not. 
+
+[00:04:19] Do I feel the need to stop what I'm doing with my life and this thing that just wraps it in a provider but is otherwise chill, right? And I actually think I'm actually mounting it in the app. If this is a real application, I might even get it too. 
+
+[00:04:33] But this is a good point, would I stop what I'm doing when I know that this isn't important if I'm testing this? And this is only going with vitest. So the question we got after the break, if I knew that the application, that this was like the first component I mounted, and I know that playwright is visiting it and just not in this report, would I stop what I'm doing for the sake of getting to 100? 
+
+[00:04:53] I would not, right? I think that's the important part. But sometimes you will see that, there's one conditional in here, which is kind of important that I am not hitting. And I think that that is a lot of times really useful as well, right? Things that gives me a lot of happiness right now, it looks like the entirety of my reducer is being hit. 
+
+[00:05:14] Reducers, as we saw before in that earlier example, function, stuff goes in, stuff comes out. If I'm just not at all dealing with a certain action that can get fired, I should deal with that, right? That's a thing that's gonna happen in my app. At no point do I say that I'm dealing with the removing of an item from the packing list, I should deal with it. 
+
+[00:05:33] So it's less of a get to a 100, get to whatever number, and it is more of this can be a useful tool. Again, if you are trying to figure out like, I don't feel comfortable about something, right, then you can figure out where the hurt is. And so this one, for instance, this is super interesting, these are my hooks that I use in that application. 
+
+[00:05:56] And there's an interesting thing that comes out here, which is looks like there's no test coverage for use all items. Interestingly, I didn't write tests for any of these hooks, it's a sample app. All right, I wrote some tests to prove whatever point that I wanted to prove, which was the rendering a component and using the component test to hit some buttons on it. 
+
+[00:06:22] And you know why there's no test coverage for this? Cuz I don't use it, it's not actually used, right? And so even as we fire up the component, cuz you get a lot of test coverage for a component cuz it loads up everything and we hit a bunch of things, I didn't call this function ever. 
+
+[00:06:38] This has no test coverage so I didn't use it, which means, you know how I get this file to 100% test coverage? >> Delete. >> [LAUGH] I would delete the function rather than write tests for something I don't use, yeah >> Probably not important, but I'm wondering about line 15. 
+
+[00:06:54] How is it that an end bracket wasn't being hit? >> I don't know. >> [LAUGH] >> The idea that you know at one point, there's I think, in the directory, you can see the data structures and makes like the fact that this stuff works at all. But this, I don't know why line 15 wasn't hit. 
+
+[00:07:15] At the same time, right, it also shows you why trying to get to 100% is silly. >> Sure. >> [LAUGH] Right? >> So my first thought is key, it's not that important, >> Not important, but it is useful. It is less about any given number on a given row, and more about, weirdly for a relatively technical workshop on maintaining large apps, there's a lot of appeals to your gut feel, right? 
+
+[00:07:44] Can you update a dependency? Do you feel comfortable shipping stuff? If you look at this chart, and like this one again is slightly ridiculous because it's an example app. But the fact that when you look through this, and again, fake app, but when you look through this, does anything look off to you, right? 
+
+[00:08:03] There could be entire parts where it's like, you might have a folder of JSON data. Yeah, that's probably not test covered cuz yo, and you could sit there and tweak it, but I don't know if it's always worth it. In this case, the solution has 100% test coverage and the exercise doesn't, right, and stuff like that. 
+
+[00:08:21] But generally speaking, I think this is a really great view for thinking about things, I wouldn't hold it as heuristic. However, like I said, there's some times where it's like, yo, my utilities directory. If one of those things throws an error and takes down the app, that's problematic, right? 
+
+[00:08:37] Things that are easy, you might choose to enforce a threshold. I will be totally honest with you, at this moment, we do not currently enforce a threshold on my team, right? >> Like that 80% >> Yeah. >> Specifically? >> Yeah, right. And I have the weird situation where I work at a tech company that makes tech for developers, and the CEO and the CTO are the creators of the technology, and my CEO doesn't believe in 100% test coverage. 
+
+[00:09:09] He believes we should have tests, right? And so that is nuance to us, our kind of view on this. And mine doesn't look this red, to be clear, mostly cuz one of my fun thing to do during meetings that I don't care about is fix Lint rules and try to bump the test coverage up on a file, almost like a Sudoku puzzle. 
+
+[00:09:26] So mine is shockingly high for someone who says he doesn't necessarily follow it religiously. I'm a little bored right now, [LAUGH] maybe I can get this up a number. And that's a fine reason to bump the number up as a game, or where you feel it's important, but it's useful. 
+
+[00:09:43] But let's talk about if you did want to enforce a certain rule, I do have some heuristics, cuz again, there are time and a place. There are certain files that I feel are critically important that I check, and if they do drop below a certain amount, I am gonna have some to-do items.
+
+---
+
+# 32. Vitest Code Coverage Configuration
+
+[00:00:00] >> So let's talk about strategies around that. And we'll also talk about, I'm trying to mostly create a fictitious situation to talk about, go back to the GitHub actions build process and how would you generate one of these and be able to download it later and kinda track stuff over time. 
+
+[00:00:13] So that's also what we're doing, so spoiler alert. But if I kinda go, and I have the kind of pre-baked version cuz watching me write this is not super useful or interesting to anyone involved. In this test directory, in your vitest.config, they're both using the same libraries under the hood. 
+
+[00:00:34] There are three popular libraries for code coverage, NYC, C8, and Istanbul. In the same way, vitest and Jest are API compliant with each other, they are mostly all compliant with each other. So which one you choose, I don't care, right? I use C8, with the C8, it's named after V8, annotates the code. 
+
+[00:01:01] Why do I use C8? Because that is the one vitest would prompt you to choose either Istanbul or C8. That was first on the list in the drop-down, right? I'd love to tell you there's a better reasoning about it. But there are some configuration features,right? You can have all. 
+
+[00:01:18] all is I think a super interesting one if you're trying to get that heuristic. Because if you think about this, normally what would happen is you do npm run test, neat. It goes to your test files. It's basically walking that dependency tree with your import statements, which means files that never get imported never get counted towards code coverage, right? 
+
+[00:01:39] Which is either exactly what you want or you don't want. If you're just glancing, hey, I'm working on test coverage for this file cuz I think it's important, then you really only wanna point to a given file. And if you do run any of the filters, your coverage report is gonna be really bogus anyway, because you might not have the coverage cuz that test runner didn't do it. 
+
+[00:01:56] all will at least try its best to truly walk the tree and find everything and start working through all the files. It's also slower. But it's good if you're trying to get a sense. Then again, my test utilities, my tests themselves, I don't want them counting. Again, to the joke that we've had all day, who tests the tests? 
+
+[00:02:16] Not me. TypeScript files, right, configuration files, it'll depend on your application. Again, big JSON files that are maybe fixtures or something. Sometimes when I find weird situations, I will grab the network request JSONs and I'll throw them in a directory in case I ever wanna do something with them later, put the UI in weird states. 
+
+[00:02:35] You can choose to ignore a bunch of stuff. You can choose to include a bunch of stuff. I think that this is arguably more important in practicality. Because, again, let's say you run this thing and it's like a sea of red, right? You're like, cool, let me start pushing back the ocean with a broom, right? 
+
+[00:02:58] You might know, hey, the files in this directory, I know that this particular file is critically important to my application and it has terrible code coverage, right? You might start with one piece of your application, right? We are in this workshop, in this course, we're not going for the platonic ideal of anything. 
+
+[00:03:16] We're going from, I have a ten-year-old code base. I inherited something. No, my god, I can't sleep at night. What do I do? You might choose the two or three most critical parts of your app and choose to maybe enforce the code coverage at that point because you know that they're critical, right? 
+
+[00:03:33] We're doing things because they make us feel better and make us more confident, not cuz we have read a blog post on the Internet that told us we should, right? The other one that I think is interesting, which you saw statements, features, branches, choose one of what you think is the most important. 
+
+[00:03:51] You do that by feel, by glancing the code. A lot of this is by feel. I hate to break it to you. And this will actually fail if you use dash coverage, if the threshold drops below that, to which you might be asking, hey Steve, how did you settle on 59.79% code coverage? 
+
+[00:04:14] I would like to draw your attention to line 23, which is thresholdAutoUpdate. Which is I put in the number 50 because I glanced at it and I saw at the time it was 54. But we've been solving some issues during the workshop and I think I added some stuff last night. 
+
+[00:04:31] And I have thresholdAutoUpdate set to true, which just basically says, it can't go down, right? If for some reason we wrote some tests and we got this thing up to 60, guess what it would auto update my file to be? 60, right? Especially if you're being very like nuanced with the input, as much as I'm against, cuz it's just like one of those things. 
+
+[00:04:59] If you had it at 100 or something really high, so to your point before, why was line 15 red? I'm sure I could spend an hour and figure it out. I'm sure nobody wants to watch that right now. So I'm gonna say I don't know, move on with my life, right? 
+
+[00:05:14] You will turn this off if it gets to the point where it's breaking for arbitrary things, but there might be things, like I'm trying to fix this, I'm trying to, we have a problem. I'm solving a problem, and then you might choose to turn that off. You know what I mean? 
+
+[00:05:26] Once you've gotten to the point where you're no longer worried about it, and that is totally fine as well. But, Dustin has a question. >> What is the all: true? >> Yeah, we talked about a little bit, if you don't have that on, it will only check the coverage of the files hit by your test runner, right? 
+
+[00:05:49] Which means by definition there will be some files that have 0% test covered, cuz no test file ever imports them, cuz vitest is looking for star. It's looking in this case, I have some weird things on this one, there is a default exclude that you can see, but for the regular ones, I'm avoiding this svelte test, weird stuff in this repo. 
+
+[00:06:09] But vitest will load anything usually with *.test.ts, whatever. And it will look at those imports and annotate everything, files that are never imported by a test aren't ever counted if you have all set to false, which is the default. It's all true, we'll also do a filesystem scan, try to collect them all that would have matched and then analyze them as well. 
+
+[00:06:34] It's tricky cuz you will then end up with things you never aspired to have test coverage, again like vitest.config.ts. That is a file that I will never test, [LAUGH] right? I don't want to test, I don't care. And I have it in the ignore one. So if you do all, this grows, right? 
+
+[00:06:55] If you don't have all on, you can probably get rid of this, right? And so it's like, how much pain do you want and what direction? A lot of these things depend on the unique, all good code bases have a lot of things in common. All terrible code bases are unique and special in their own way. 
+
+[00:07:12] This is why we're kinda taking a very wide philosophical stance here, because the terrible code base that you are dealing with, if it was that easy to solve by applying a few things, it would have been fixed by now, right? You could have probably just even run something that, Prettier can handle all the formatting issues. 
+
+[00:07:30] You're left with that six deep nested conditional. You know what I mean? With three, four loops in there, right? You have to deal with that one. Prettier will definitely move that semicolon back for you though. And yeah, use the tools appropriately. And so, yeah, we're kinda casting a wide net in that sense. 
+
+[00:07:50] But like I said, I think what could be interesting, and there are services where you could, I think CodeCov is one, Coveralls which I like as a name, will also integrate with your build process and chart it out over time. And again, to the point we made earlier, the number, [SOUND] that's dangerous. 
+
+[00:08:10] A graph that shows it going down is possibly useful. You know what I mean? Saying like we have to have 80. And I think Amazon does this, right, it's like a Bezos thing, where it can't drop below 90 or something like that. >> So philosophical question about that, I think you already answered it, but I wanna just clarify. 
+
+[00:08:29] >> Yeah. >> When you say the 80-20 rule for example- >> Yeah. >> You're not saying, just look at it. If it says 80%, we're good, you gotta actually look at what 80% is being covered. >> Yeah, it's like, are you covering the right 80%, right? >> The 20% that's not covered could be the most important. 
+
+[00:08:41] >> Yeah, could be the 80% of what your code does. You know what I mean? It's like we joked before about that agony for performance, right? If the most hit code path in real world production usage is not covered, that's probably more important than if you had 80% of files that don't really get used all that often, right? 
+
+[00:09:01] And also, any number that you read on the Internet should be treated with suspicion. Because they're written by a bunch of backend engineers who have microservices where everything is really condensed down and we have to deal with wild bunch of state and Safari hacks. Used to be IE hacks, right? 
+
+[00:09:21] And things are tougher over here- >> Viewports and? >> What's that? >> And viewports and devices. >> And viewports and weird, Firefox does this a little bit differently, and Mac OS wants to put a gloat, that kinda stuff. So, and like I said, this is only doing what vitest does. 
+
+[00:09:42] So you could have an amazing set of, is that a question we got from after lunch, you could have an amazing set of browser-based tests. And maybe someone's be like, yo, there's a tool that merges these things, I don't know about it, because it's usually working as the built assets at that point. 
+
+[00:09:57] We don't have access to this anymore. But you could have something that is covering it effectively, as well. I worked at a company a few years ago, they hired three full time people whose job it was to clone down the repo and spin it up and do things, right? 
+
+[00:10:21] [LAUGH] And so 10 to 100% code coverage, whose job it is? But yeah, and so it's useful tool. But the coverage for it I think is super interesting. And if you wanna do the programmatic stuff with it, there are different reporters that you can use. Yeah, reporter, and I think I can do it as an array. 
+
+[00:10:40] Yeah, you see that autocomplete happening in there? The modern era is really great, [LAUGH] as I said before. This is when people who wrote compiled language would be like, the compiler tells me everything and finds all the problems. I'm like, must seem nice, and I feel like I'm starting to live in that world. 
+
+[00:10:58] These are some of the ones built in. Do I know what they all are? No. TeamCity seems like a thing that I should know what it is. I don't. JSON, if you were gonna build your own or wanna track it over time, right, cuz, yeah, do I believe that you should write your own code coverage monitoring tool? 
+
+[00:11:16] I do not. Have I worked at companies which won't let you install third party anything ever and understand that you might have to give them where you work? I do understand that. So JSON might be what you choose to do. That I read, as I was talking, as Cobra Tuna. 
+
+[00:11:30] That is not what that says. But yeah, and so there are different things you can do. You can generate this, so on and so forth. It would be interesting if you wanna know what happens, how it annotates the code, that's the data structure. You are welcome to format that with Prettier and look at it in your free time. 
+
+[00:11:52] I will not be doing that. And this is also partially a reason why maybe you don't wanna check this in the version control because, you know what we don't need in our lives? Everyone checking, having merge conflicts with that. So, yeah, but you might have your build process do it.
+
+---
+
+# 33. Generating Artifacts Using GitHub Actions
+
+[00:00:00] >> Let's talk about if we wanted to generate as this as part of our build process, and then view this file as the thing to do. And to be clear, you're like, I don't care about code coverage. That's we're just using this as a vehicle. For instance, you might care about the video recordings that Cypress takes, and if a test fails because there's nothing worse. 
+
+[00:00:24] It's not a Cypress thing, this is just what's recently happened to me with Cypress, where you run the test on your machine and everything is great, and your build keeps failing right? So, getting access to the videos or something like that, that a lot of these tools take is super useful. 
+
+[00:00:39] And exactly what we show here works the same way when it comes down to whatever we're doing. The other thing I'll point out and this is slightly different for every different testing tool whether it's NYC or Istanbul or whatever, they're just like ES lint where you can ignore a line, so for instance like our famous line 15. 
+
+[00:01:03] If I had a threshold and you needed to ignore something very specifically, like if there's one only in Safari, which you should not be writing user agent-based code. But I've done bad things in my life, you might choose, because it will never get hit in your CICD process on Ubuntu, right? 
+
+[00:01:22] Cool so, luckily, there are various reasons why you might do what you also like building your static assets, stuff like that. There's all sorts of things you might choose to do here, luckily, the strategy is exactly the same, no matter what you aspire to do, and so there's lots of ways that I could choose to do this. 
+
+[00:01:43] But, We are a little bit ahead of the game here, Basically, I'll show you how to do this and then, yeah, we want it only on the test one in this case. I could have a separate job. This depends again on how you wanna live your life. I could put my dash dash coverage in here with that auto threshold right as I switch branches with example code as I talk who knows how that will go. 
+
+[00:02:15] But let's go with the spiritual just here. --coverage now like do I want the build to fail? Do I want basically, did my test fail? Or did I not have enough coverage? That's a reason why you might break that out into its own job, right? Which is I want the visual representation when I see that red X to immediately know. 
+
+[00:02:38] I think that I have sold myself the argument that this should be a second job even though it's also running the test suite. So, there's the thing that I learned about myself today, Which is weird I don't think that's true in my current code days. And this is a catastrophe from when I was practicing earlier. 
+
+[00:03:02] So, we've got the steps, and so we run npm test, and we're gonna do that with Dash, dash, coverage this time. >> Double -- >> Double dash, >> Thank you. That's why you live code with your friends, cool. And that will run it. And then we need the important part. 
+
+[00:03:22] And a lot of these are like you owe it to yourself. I should not do this together with you all because it's not a good use of a generalized time. You owe it to yourself to Google GitHub actions recipes. And just like peruse, do a very cursory overview of the random blog posts because I work on an open source code base, so triaging git issues with labels and having it hit a slack webhook is important to me. 
+
+[00:03:54] And if you work on a private code base, completely worthless to you. So we will not be doing that one together. But you owe it to yourself to at least look at it. Because a lot of these things, the process is like, awareness that you can do it is like half the battle. 
+
+[00:04:08] Cuz you're gonna watch how many characters I type here to get this in place. So there's an action called upload-artifact, and my main goal here is that you just understand that artifacts are a thing. We want to use this one, coding and typing at the same time. We'll call it archive coverage report. 
+
+[00:04:34] Right, if you needed the built asset, then download from the archive API and then push to your internal. I used to have literal Linux boxes in Chicago that I had to push the production access to, and we would take two of them out of the load balancer. Cuz it was a way too late for that to still be the thing, but it's important. 
+
+[00:04:59] So you give it some kinda name in this case. Coverage report. And we say, what path? Again, if this was your build output, it would be the build directory or dist or whatever scientific experiment you're doing. In this case, I know that the folder is coverage. What I'm going to do just to save us a little bit of pain is, since I switched branches and I discarded files. 
+
+[00:05:33] I wanna make sure these tests pass before I push up and get the feedback loop of the build system You know, as it ran twice, does anyone know why? The auto update threshold changed the number which triggered a rebuild cuz the vite config change. Cool, but my tests do pass, so that's important. 
+
+[00:06:00] And then what we'll do real quick is we'll say add a build job for code coverage. And we will go ahead and we will push that up. What I'm going to have you do in the meantime, just cuz it's gonna take a little bit, is, why don't you try it out either if you had, one that you were working on previously or just do it the build step. 
+
+[00:06:29] Do like an npm run build which should be again, and you already have the action there, right? Just add the archive thing there as well, give it a different key and then you'll be able to see that as well. And then you could get the compiled assets and do something with them, right? 
+
+[00:06:44] If you're going to something like Vercel or Netlify, you don't need to do that. But if you needed to do something like okay, and then we will have something else where we push into production, however your system works cool. But try it out with the actual building of the assets with your dist directory and verify that works as well, just to get your hands dirty. 
+
+[00:07:01] And that will be a thing that we do together while I just wait for the build process to run. And then we'll check in on it together in three minutes.
+
+---
+
+# 34. Generating Coverage Report Artifact
+
+[00:00:00] >> So we have our unit test, and our build. And one would argue, could I put a dash dash coverage here? I could, it would work, right? It would run my test and would generate a coverage report. I could absolutely do that. That said, when I get a red x. 
+
+[00:00:18] I kind of want to because I have that threshold in there. You have no threshold, yeah, put a dash dash dash dash coverage here, do it, right? Right now I have that auto threshold set which will fail the build if it doesn't hit that. And so if I see the red x I would like the visual indicator of why I got a red x, because I didn't hit the coverage threshold or because my tests don't pass. 
+
+[00:00:40] So in that case I would break it out into two tests. Again, so some of these are less about the technical limitations, more about the ergonomics of using it. So for us, what we're going to do is we simply. And like I said, you owe it to yourself to Google, like, GitHub Action Recipes at some point. 
+
+[00:00:58] Because whatever, like, there's, if not only, like, don't copy and paste the code. A lot of it's bad. But at least for the inspiration of things you can do. Because a lot of it is, pull in this action that either somebody else pre-wrote or is made by GitHub, or looks reasonable or something you might choose to do yourself, right? 
+
+[00:01:19] But again, there's like auto commenting on GitHub issues, right? Which is somebody runs an open source repo I might want at some point in my life, but if you were in a private one, it's not useful. Stuff that is kinda unique enough that it's not worth all the time to do as a group. 
+
+[00:01:33] Like stuff like running your tests. Think we should all do that one, right, cool. Building the assets, yeah. Running a typscript checker. Weird little stuff like, we have one thing kick off an npm version bump to a different repo and then kick off this other thing and deploy this way. 
+
+[00:01:51] We have, like, a Rube Goldberg machine that's actually particularly elegant and beautiful, but not really generally applicable. But you owe it yourself to at least do an inspirational journey to see what's out there. Because there's, like, wild stuff. You can basically control anything in GitHub. And also make cURL requests to, like, make a Slack notification based on this thing happening, so on and so forth. 
+
+[00:02:13] But for us, we're just grabbing this actions/upload-artifact@v3. Where we'll archive a coverage report with the name coverage-report and the path coverage, right? The challenge that I'm giving you is do something very similar with the build assets. It's not spiritually any different, but it's just a way to kind of move your hands and fingers and do something on your end. 
+
+[00:02:37] So as you can see, it ran. I've got three parallel jobs at this point. And I have this new artifact, and it's called coverage-report. And it downloads a directory. And you know what that directory is? A zip file of the coverage folder, right? So you could at least audit. 
+
+[00:03:00] You have that as an artifact every time. And like I said, we did this with the coverage report because it was a thing. It could be your build. It could be optimized image assets, right? It could be, if you're building an Electron app, it could be the built. 
+
+[00:03:15] Like you could use, like we said this before when we're introducing GitHub Actions. You choose to build it on Windows, build it on MacOS, build it on Linux, and then have the built assets that you're doing stuff with. When we release our CLI, it's a Go binary, we compile it, right? 
+
+[00:03:32] You download from GitHub releases, right? We use it internally to move stuff around between workflows as well because you can query it with the GitHub API. You can move stuff around with it as well. There's lots and lots and lot of reasons that are somewhat unique to your life. 
+
+[00:03:46] Luckily, the same action/archive upload artifact rather, @v3 will work regardless of use case, because all it takes is a directory and a name, and then you have this ability as well and you can do that. And again, you could theoretically, if you had that enforcing the threshold. I would again be very light touch with it, only do core files. 
+
+[00:04:08] Don't do everything all the time because I dropped, one of the draft runs of this, forgot that I had left that on and it dropped a slight bit and then I had to like my build failed. Maybe that's not what you want. The other thing you can do with GitHub actions. 
+
+[00:04:25] And we won't because it's just like a one-liner. And the nature of it when I tell you what it is will explain to you why we're not doing it. You could put a schedule in there. Like instead of like, you like it on like pull request to main, you could also say at 1:30 UTC every day, like maybe you run a bigger test suite, right? 
+
+[00:04:50] I'll say it now and then we'll revisit it when we talk about playwright. You can run playerwright against all the browsers. Every PR, that's gonna take some time. You gotta download them, yada, yada, yada. And yeah, I will probably get in trouble on Twitter, I'll say it. You might choose for PRs just run it against Chrome, right? 
+
+[00:05:09] However, we're gonna actually cut a release and deploy to production. Okay, now Safari, and Firefox, and all the rest. Right, and so you could theoretically, maybe you don't break a build on the coverage report on the thresholds. But maybe you like choose to run it every day and have it notify you. 
+
+[00:05:27] Either with a broken build in the actions that doesn't stop a PR from going in but you can see, or have it log to Slack, or whatever. To show you like, hey, you're below the threshold. And that doesn't necessarily mean you're gonna stop shipping code, as if you did it on a pull request. 
+
+[00:05:45] But these are the systems that I'm talking about in the processes. This is more of a true process at this point of, hey, maybe at sprint planning we take a look at the code coverage report that was generated an hour before sprint planning every day or every other week, right? 
+
+[00:05:56] Something along those lines of, what are the systems that keep you accountable? Maybe, you know, if you're on the process of getting towards a given accessibility standardization, you run it every so often. You can manually kick off an action as well. And you might choose to do different things where you don't necessarily do it every PR, maybe you do it yeah, every so often. 
+
+[00:06:18] Maybe you manually do it. Maybe you maybe instead of failing a build. Like even if you use GitHub but you don't have an open source project. Maybe like for the more egregious accessibility or lint issues, it doesn't fail the build, but maybe it opens up like a GitHub issue. 
+
+[00:06:35] Right, that you can then track or do something with. Or you can do cURL commands, you can make API requests, right? You actually have a GitHub SDK in there as well. Maybe it like hits a webhook in Jira right and it creates a Jira task. We should definitely deal with that now I don't have to break the build. 
+
+[00:06:51] There's nuances of like because that run is a bash I mean you can do other shells bash. And so you can send HTTP requests anywhere you want. You can run JavaScript to do very small things, right? Like all the processes, I said this very, very early in this workshop we have a release we call it release party. 
+
+[00:07:10] We cut a release of our UI every week on Monday at the beginning. And like currently it's an hour long meeting, mostly because we're also joking around. But the goal is every repetitive task, somebody's doing the deploy while we do stand up, and then somebody else is noting all the manual steps we had to do. 
+
+[00:07:29] And we're just slowly whittling it away and slowly getting to the point where it's like, that's tedious, we should automate that.
+
+---
+
+# 35. Creating Mocks
+
+[00:00:00] >> We're going to change gears a little bit. And there is a topic that if I was gonna talk about unit and component testing, I technically have to talk about, and I've alluded to it, so I also have to talk about it. But I think should be also like coverage reports on the other end, should be treated with a certain amount of suspicion, right. 
+
+[00:00:25] And it's mocking, stubbing, spying test doubles, 1000 different terms like unit integration and end to end test, all those terms. At this point there are people who definitely know what the difference between all those things are between a test double and a mock and a stub because it's their personal brand. 
+
+[00:00:47] For most of us, you can probably just use them interchangeably right? Again, this is a test on making maintainable large code bases, a full-on unit testing course will get further into the weeds, but in my general day-to-day practice as a practitioner, you use them interchangeably. It doesn't really matter, don't worry about it. 
+
+[00:01:04] The concept is the same which is, you should probably only have your tests fail on stuff that you control, right? And so sometimes you need to fake things you don't control. You don't want your test breaking because the backend is down, right? They should be on call for that and they should fix it. 
+
+[00:01:27] Or there are things that you don't wanna do. A lot of the good use cases for mocking and stubbing are more applicable to the back-end. For instance, you probably don't want to hit the Twilio API to send a text message as part of your test suite. You mock that one. 
+
+[00:01:46] You say like, did you get a fake thing? Did you get requests? Pretend like you're Twilio and that you sent the text message, but one, that API costs money, and sends text messages, [LAUGH], right? You don't need your test to fail because you're out of money for things you shouldn't be paying for anyway. 
+
+[00:02:02] You should pay for Twilio, but not in your test suite, so stuff like that. Like running a credit card, probably don't want to do that as part of your CICD process. Mock and stub that out. Front-end engineers you got less of a permission structure, right? Yes, the back end API's, but I'm gonna caveat that later, so good luck there. 
+
+[00:02:26] Other than maybe talking to an API, that's basically it. But again, and we'll also see that if you had dependency injection and you were able to pass in the function that should call the API, you could just have normally passed in an empty function and not needed to mock or stub anything, right? 
+
+[00:02:45] And we can argue is that really a mock or stub? I'm not having those conversations right now. But I will show you how to do it, but I would say every time you do it, and if you are doing a code review and you see one of these lines, you have my permission to, in the code review be go like, what you doing here, right? 
+
+[00:03:04] Are you sure you need to do this? But let's talk about it, I think it's super useful, but it's a way to basically, replace functionality and either use something fake or in a few cases, be able to have some introspection on what's going on, cool. So we got mocks, we got spies. 
+
+[00:03:25] I think I'm gonna start out with just kind of a slightly silly example, because I think it'll prove the point, I think. And I think this is the file that I added randomly that was causing some problems earlier. Let's go back to the main branch, not my weird actions branch, discard my auto update, right on. 
+
+[00:03:52] And I got this directory called logjam, and logjam is silly. It's got this arithmetic object. It's also got log, which is kind of like console log, but more different, it's console log. It just calls console log. You just pass log error, warner info as the first argument, it's console log. 
+
+[00:04:17] And I've got this ridiculous test file in here, in order to just play around a little bit. This is basically a sandbox to play around in. So if you're using vitest you have this vi object. If you are using jest, you will change two things. You will change the word vitest to jest, you will change this vi to jest. 
+
+[00:04:49] Everything else that I do will be the same, sweet. So if we grabbed that, is it export default, export const log. Right, this is a function that I can pull in, and I can do stuff with. One of the things that I can do is I can choose to either mock something or spy on something, right? 
+
+[00:05:28] A mock is super interesting. The way that you write it is a const, And this returns a function. This function out of the box doesn't do anything. It's just a no op, empty function, right? What I can do here is I can do mock, mock, one more, mock. 
+
+[00:06:06] We're first talking about the good cases where I'm okay with you mocking and stubbing, to be clear. And that's cool, cool, cool. And we could then do stuff like, expect(mock).to, HaveBeenCalled, right? So for instance, let's say we have a function of, like we talked about, it'd be great if you could pass in the thing that makes the API call, o something where it's like, hey, I'm gonna give you a callback, right? 
+
+[00:06:39] And what you probably wanna do is verify, hey, did my function that was supposed to call a callback, did it call the callback? Well, how would you do that, right, normally? Well, you're all very smart, I'm sure you could figure it out. You might keep some weird variables around, and then in the callback, it would iterate the int, and then you would check to see that the number was a number. 
+
+[00:07:11] Again, you run into who tests the unit test at that point, right? If you mess up the logic there and your test fails, life's not good. So we can go ahead and we can see this file here and go over to test. That's not even the right test. 
+
+[00:07:27] I can do, Vitest, what was this filename called? test.ts. >> Well, it should still let wrap, yeah, it should still work though. >> It doesn't hit the dot. Move test. >> Cool. >> You still have your to-do though. >> Gotta remove my to-do. Gotta reopen that file. Life is hard. 
+
+[00:08:12] Cool, move that to-do so that it passes. And you can see that this toHaveBeenCalled. So one of the things that a mock and a spy does, when I said it was an empty function, I wasn't lying. I was, but I wasn't really lying, I was spiritually honest. It's a function that doesn't do anything, but it does keep track of every time that it was called, right? 
+
+[00:08:40] And it also keeps track of the arguments that it was called with, right? And so if you're passing a callback, or you have another function that you're expecting, hey, this thing should call fetch with the right API, or it should call, you might choose to mock out local storage, right? 
+
+[00:08:57] Things that you don't really have access to in the browser, that you don't control, you wanna make sure that under the hood, this thing should have put this thing in local storage or it should have called Fetch. It should have called this other library, it should have called the Twilio SDK with these arguments, right? 
+
+[00:09:13] Mocking something will allow you to do that and that's testing your code. Just faking out the world because you don't like it is not a great use of mocks, because like it'll get your test passing at what cost, right, at the cost of your code is divorced from reality, right? 
+
+[00:09:28] So unless you are truly using it to exercise and test the code, I would be suspicious of mocking, right? There are probably better ways to do it, but toHaveBeenCalled. And then we can do, that's the big font here is called with, toHaveBeenLastCalledWith, toHaveBeenCalled a certain number of times, toHaveBeenCalledOnce, super interesting toHaveBeenCalled, toHaveBeenLastCalledWith. 
+
+[00:09:58] That test fails, cuz you can see it was expecting one argument, an array of one with that word in it. It was called with an empty, And now it passes, right? So if this was code that calls code that calls code, but maybe you're passing it in, right, and you wanna follow it down the chain, you could test that function. 
+
+[00:10:25] It's basically a way to look at that thing and see it. And that's a really powerful use of a mock. If you needed it to also do something, you could pass that in here as well. So you could say something like, Just until the other ones pass, I'll make that optional. 
+
+[00:11:04] Right, so now you can see now it will do a thing. I'll show you just the thing that I'm not going to talk about otherwise. This is something that I use a lot, especially as I'm developing, I'll use a snapshot. If you don't return stuff, you don't see it. 
+
+[00:11:32] So even my dumb example, my test helped, right? That's my snapshot. A lot of times if I'm working on something, I wanna make sure it does the same thing as I refactor it. You can use a snapshot or an inline snapshot, snapshot writes to a file, inline snapshot puts it right there. 
+
+[00:11:49] And as you're iterating, you're like, cool, I don't have tests for this function this is what we talked about before that 80%, this is a thing that does things. I wanna pass in some callbacks. I wanna make sure it does the same thing as I refactor it, and then I'll write the real tests or something like that. 
+
+[00:12:04] It's a great way to get you up there. Is it the best testing strategy in the world? No, you saw me before when I saw an outdated snapshot and I just ran update snapshots and moved on with my life. Super brittle, but I think in the same way, I don't use code coverage, necessarily, as a real analysis of whether or not I have good tests. 
+
+[00:12:23] I don't use snapshots as real tests. But I do sometimes use them for things I don't totally understand and I'm still figuring out. I just need it to work the same way. I will use it as I'm developing a lot, and I think that's okay, too, but being like, this is easy, I don't have to actually write real tests. 
+
+[00:12:39] I'll just snapshot everything, until the next person blows them all away and why do you even have these tests? But you can see that it will act like a real function in this case. I can keep track of how many times it's been called, what it's been called with, right? 
+
+[00:12:52] And like I said, you could choose to mock out third party libraries. And I'll show you a better way to do this, why I'm not doing a whole example on it. You could choose to mock out Axios or node fetch or whatever you want, and then be like, cool, Axios should have gotten called with this API. 
+
+[00:13:11] And you don't have to figure out how to detangle your code, cuz if it's tightly coupled, you might not have access to a thing that calls fetch, right? My argument, if this is a true course on testing, we spend a whole lot of time talking about mocking cuz I think it's somewhat useful. 
+
+[00:13:25] I will repeat the previous statement cuz it makes my point better. If your code is coupled together, you can use mocks so you can get test coverage. This is a course on a large application, untangle your code, [LAUGH] right? It's the real answer. A mock will do the trick for you, there are other things you can watch that will show you all the depths of mocking. 
+
+[00:13:44] But I should mention it because it exists. You should use it when you need it but you should always treat it with suspicion. And you should not be like, I'll just mock out everything because you are divorcing yourselves from reality.
+
+---
+
+# 36. Spying on Methods
+
+[00:00:00] >> A spy is like a mock, but you can spy on just one method of an object, right? It's basically the same idea otherwise, so I've got that arithmetic on I can also, let's do it actually with this one. So I could say, let's say we'll deal with log, and we'll say vi.spyOn(the console object. 
+
+[00:00:31] And why don't you look at its log method for me, right? Cool, and then we could do stuff like either that log that we saw before. And we could say log, I didn't realize that if I call it log and I try to use console log, it's log log, but life's hard. 
+
+[00:00:52] 1, 2, and 3, you can see that with a spy, it still did its thing, it's still logged to the console. If you don't want that to happen, you could do something like .mockImplementation. You can also fake a promise returning. There's lots of useful cases where you would do all these things. 
+
+[00:01:13] And they're very specific and you'll know it when you see it, but again, treat it. So you can either mock the return value just once and then put it back the way it was. You can just mock the return value, you can change with this, you can do all sorts of things that you need to do. 
+
+[00:01:27] Keep in mind, the more clever that you get, the more, what are you doing, [LAUGH] right? You can do mockImplementation. And where I could make it a no-op, and then it won't log to the console. This could also be useful if you have a library that has a console log in it, right? 
+
+[00:01:52] For that test, you could get it to be quiet for a moment, right? There are times, there's very specific times in places where it's like, I need this thing that, especially if it's a third party library, you might choose to do something, right? There are lots of cases, I'll show you how to do this for a third party library as well, but this will, in fact, work. 
+
+[00:02:15] And so now I could also look at now like expect. It gives the same API as a mock. Expect(console.log), which is not in my test, as you notice. My log function is, it calls console.log under the hood, right? And this could be local storage.set item, here's a time where you're allowed to use a mock or a spy, ready? 
+
+[00:02:45] Geolocation, right? Time also, but that's a separate topic. The browser APIs that you don't fully control, and you wanna be if low battery don't run this worker, right? In this zone, I wanna see if my distance algorithm works. I would argue it should be able to take the actual latitude, longitude, and return that, that's what you should test, but sometimes you don't control the code. 
+
+[00:03:14] This whole course is about you came to a code base that you didn't make the mess, you have to clean it up. There are things that you can do that you can use strategically. So expect(console.log) toHaveBeenCalled. Yeah, we didn't call console.log in this file, and we also made it be quiet and not do its thing, but we were able to track that it was called like at all. 
+
+[00:03:41] And BeenCalledWith, Right, and so you can get some introspection. I am okay with you using it to test your code was called the way you thought. If you start mocking out everything, we're gonna have words, right? And so it is useful tool, it exists. The other thing that I will show you is if you need to do it for a third party library. 
+
+[00:04:06] Maybe you have this very high-level function that you use throughout your application, even one that I have in my code base, and we can maybe take a look at it later, is I have one, and this is a pattern I really like. And so now we go less from the test and more from a thing that I think you should just do when your code base, is I don't use fetch in my code base, I use this request from API. 
+
+[00:04:31] Do you know what it does under the hood? It calls fetch, right? But I might have that with this string to be typed to only allow my known API endpoints so that if I mistype something, TypeScript tells me, right? Or maybe if it catches, it sends something to Sentry, which is an error logging tool, or to my logs. 
+
+[00:04:58] And if it's successful, it sends something to Segment, which is user tracking or whatever, right? They're always things that you do over and over and over and over again, don't type that and have this request from API in place and just use that. And we have a certain kind of pagination where we don't know the number of pages, you just get the token for the next page, right? 
+
+[00:05:16] And I only get for some API's 50, so if I need 100, I can say get 100, and we'll requestFromApi, it will keep iterating down to the next page token until I get the note. Very specific business logic for the thing that I work on with the APIs that I have, right? 
+
+[00:05:32] It will do things, and so I might want that to use fetch or something along those lines of Axios, and that is a case where they might be purposely tightly coupled, right? So you can have something like this, and that's a point where you might choose to do something like this, where you can verify that did fetch get called are the things that should have gotten called. 
+
+[00:05:51] Cuz if someone breaks that, or yeah, in this case, I do wanna put this response in there real quickly. But you can do some really interesting things but- >> Where does requestFromApi come from? >> This is a fake function I just made. >> Okay. >> I would say you could call it request, you could even call it fetch if you want it and just import it in the same way. 
+
+[00:06:11] You only made that render function that kinda uses testing libraries render but different. That's basically I'm saying hey, fetch, but with some of the nuances of my specific use case, please, right? And that might be a case where, then you wanna make sure fetch got called right, right? 
+
+[00:06:28] And maybe don't wanna do then also send the fetch, now you can start to get my permission, right? But if you find yourself mocking stubbing, I said this earlier in the course, if find yourself mocking and stubbing code you control, fix your code. Do it for now, yeah, fine, but fix it, right? 
+
+[00:06:47] It's mostly for things you don't fully control to make sure that got called the way that you think it does.
+
+---
+
+# 37. Mocking Third-Party Libraries
+
+[00:00:00] >> The one other one that I will show you real quickly, I don't have that many third party libraries in here, so I'll kind of maybe just, is one of the things that you can do, and the syntax for this in Jest is Jest.mock, right? One of the things you can do is say something like Axios or whatever. 
+
+[00:00:20] Literally, this will break my rule. Any import, anything that you would put in the tail end of an import, you can put in here. And under the hood, Just replaces require with its own special require. Vite, I think, uses some magic around ES modules. But basically, by default this will replace all the messes with mocks, right. 
+
+[00:00:54] So now, if you did this to just Axios, to node-fetch to whatever you want, you would get back the same API completely stubbed out, and stuff along those lines. And then you could also give it an implementation here as well. And in this case, it's interesting Note's fetch, it knows, it returns a promise. 
+
+[00:01:25] This one's not in the library. That's probably dangerous. But you can theoretically return a new object, which is what you want it to be replaced with, right, with the functionality that you need. Okay for a certain few things, treat it with suspicion, yeah. >> I have a question that's slightly off topic. 
+
+[00:01:47] >> I love it. >> Maybe a little higher level, but I was thinking about with these mocks and everything and testing third party APIs specifically, something that I've had to do at work is create an interface, create an interface just to specifically consume that API. And I'm wondering then, if you were to be writing up a test suite for an interface specifically, would you then just test the interface itself? 
+
+[00:02:09] And then assume that everything is correct from before then, and trust those tests to tell you if they've changed the API? Just because the word's overloaded when we say test an interface or define an interface, what do you mean? >> Essentially getting the outputs that you'd expect like if I give a user name to this I'd expect to get back a user object with those fields or whatever. 
+
+[00:02:30] >> Like from a back-end service? >> Yeah. >> Yeah, well, I'm kind of lying a little bit when I say don't mock anything because obviously, in the same way we don't run credit cards, you might not control auth. You might not control the back end. You don't want to have to spin up an entire, I work on a little open source server. 
+
+[00:02:49] I can spin it up in my development environment. When I worked at Twilio, you could not spin up all of Twilio in your development environment. So saying, hey, I hit this API, and this is normally what I get back, totally okay. Things you don't control, go for it. 
+
+[00:03:04] I will show you a better way to do that in a second when you shouldn't use this to do it, but for stuff you don't control, absolutely. And you might wanna make sure that like, hey, I hand things to this interface or this abstraction, it then calls fetch with these things, making sure that actually everything got to the end of your boundary of control. 
+
+[00:03:26] Well, absolutely, right, simulating what the network response would be so that your component actually renders, cool, go for it. We'll see a different way to do that, but absolutely. This thing calls this function enclosure scope, remember when we were refactoring that react component, and I was like, that store is bound to the component. 
+
+[00:03:50] Could I have done something like this? This is effectively pseudocode, but it gets the point across. React Redux, right, and then I'll return use dispatch. I could have just mocked the entire thing out, which has got maybe some other implementation, right? And then use Selector because I didn't want to refactor my code to be able to pass in a store, or to wrap my main component, that's why I say, fix the code. 
+
+[00:04:23] I could have used this when I had that issue with the store not showing the right things, right. I could have made a fake implementation here, and it would have probably worked. But then I've lost confidence in my code versus refactoring and using the real thing, right? Like most things here, there's a taste issue, right, which is don't just cheat to get the test passing because then you devalue your tests. 
+
+[00:04:50] And I care more about the health of the application than the test for test sake. And you're not getting any confidence, you're just doing stuff because it feels good. I could have done that instead of refactoring my code. And I would argue with you control all the code involved if it is in your repo right, the boundaries of your repo are basic unless you control multiple repos, but you know what I mean. 
+
+[00:05:11] The boundaries of your repo are where after that you are allowed to mock things and you're allowed to stub things. But generally speaking, if it is code that you control, either use the ability to pass in an empty function or something that does what you think it does, you wanna pass in a mock, you have my blessing. 
+
+[00:05:32] You wanna do stuff like this to hijack your own module system for a file that you could have just changed, and again, I've done these things. I'll probably do one of them next month. There's a time and a place, but feel bad about it. You know I mean? 
+
+[00:05:46] Just feel bad about it, just in your heart know that this is a hack that you will regret at some point. >> It's a place to leave a self-demeaning comment. >> Yeah, like one of those to dos that you'll never revisit again. I have a new rule that if you leave a to do in the code base you have to put a date on it. 
+
+[00:06:00] I don't trust git blame, you move a file, you lose all that stuff. You put your name on it and you put a date on it and then you're allowed to put a to do in there.
+
+---
+
+# 38. Mocking Time
+
+[00:00:00] >> The one that I do use somewhat frequently, and this will be where we kind of see a little bit more of this in practice. And I encourage you all cuz like there are various things to play around with and we will. I would follow along to this section cuz like we'll do an exercise where I think it's interesting to us is time. 
+
+[00:00:18] Right time you're allowed to mock right in my fictitious ruleset that is a blog post waiting to happen of Steve's rules on when you are not allowed to mock based on his opinions rather than facts. Time right and so for instance because reasons, I'll give you the real-world use case for me. 
+
+[00:00:40] I've got these drop-downs for filtering, right? They send what looks like a SQL query to the back-end that should get you the results. The old UI that we were migrating from had this drop down with like, last 24 hours. Last three days, whatever right drop down. Originally we were just re-platforming so that we could pay down some tech debt and deploy to our own cloud. 
+
+[00:01:13] That query engine on the back end does not support last 24 hours. That's not a thing, right? You can't send it last 24 hours, right? So but you have to send it a query, right? So the way that we do that is pretty simple, which is start time. 
+
+[00:01:31] It's 24 hours ago, right? So take and then on elasticsearch that works on sequel lite you actually I have to put an end time that I had to put in the future. It's not important. So there were all these use cases where I'm like, hey, depending on which backend you're talking to, and this and that and the other thing, there's a lot of logic here. 
+
+[00:01:55] So I should write some tests, right. Mostly because for a sanity check, all these different things, I wanted the feedback loop. Once I got it working, I was pretty sure no one's going to touch this code again. I don't need the test coverage for reliability, I need test coverage so I don't go insane, changing this thing and doing the mental math in my head. 
+
+[00:02:14] So in that case, I wanted to see like, hey, if I put 24 hours ago, it should have been 24 hours ago. What's the problem with time? >> Time Zones. >> Well, there's lots of problems with time. In the words is it like seal as it? But like it's originally, is a Kenny Loggins time keeps on ticking, ticking, ticking into the future, all right. 
+
+[00:02:40] You can put a value in your code base. It's instantaneously a broken test, right? And in those cases, that is when you might choose to mock out time, right? So let's take a look. I have another kind of, this was just simply a little dummy file that I could write code in and see instantaneous results. 
+
+[00:03:01] We have this other one here called time zone, which is not about time zones, does this file pass? Cool, cuz what I don't need to do is I have a half done file and then be really confused when I like tried to do another GitHub build action later and it doesn't compile. 
+
+[00:03:15] So we go into this time zone are we running the server we are, so, this app does a few things. It shows you date.now. It shows you how long you've been staring at this page. This is hitting some public API, right? So, it does all the things that you might actually choose to mock in an application. 
+
+[00:03:42] We have real apps that will use like playwright but I just needed something tiny. What if we needed to test this thing this component is really hard to test all the functions in here really hard to test and it's got almost all the problems that I've been leading up to. 
+
+[00:03:56] In one little microcosm, I will put an extra fun ones in there, shuffles them with math dot random as well. All right, same we were that you UID now I would argue to kind of like start to pull a lot of our unit testing talk together that like stuff we did with asymmetric matrix yesterday right. 
+
+[00:04:14] Where we like there's parts of this I don't care about, right? Think about that, that's an option that I wanna leave on the table for you. But in some cases, you're like I wanna just make sure this thing mostly renders the same. Maybe you are using a snapshot for a good reason. 
+
+[00:04:30] Math.random is gonna ruin your life, time is gonna ruin your life, and a third-party API is going to ruin your life, right? There are three problems with this ridiculous component, all of which are bad. So if we look at it, yeah, should we show the to-dos at all? 
+
+[00:04:47] It keeps the current time and sets it on an interval. Yeah, everything that you hate in the world is happening in here. It makes an API request and then it renders it to the page. So you can imagine that like if I did something really like egregious in this case, like for instance, this one was like giving us trouble earlier. 
+
+[00:05:14] Like should match snapshot? Well that's not gonna go well, cuz that snapshot will by definition. And this is why things were breaking before. So we can do, let's do npx vitest. It fails. Because the time is different than the last time that it rendered. Also, apparently I changed something since then, but that doesn't really matter either way. 
+
+[00:05:47] So you could update the snapshot and it passes Until you run it again and then it fails. All right, and this is like from my like, this is what I got went through with that query builder. And this is a place where you might choose to do something like this. 
+
+[00:06:05] So what you could do is say something like, this is why because y'all been asking you every time you're like, can I use it before each now? I might not yet, not yet. Now, for each you could have used it the entire time. I just choose not to cuz I've been hurt too many times. 
+
+[00:06:25] Sometimes you have to be like, Steve says this is the right thing just realize like Steve's been hurt. Use fake timers, and you can guess what that other method was, use real timers. It should probably go in the after each or after all, I don't really care which one you do. 
+
+[00:06:43] It's cool and so now this one fails. Why does it fail? Because I was back to importing this time. Okay, all right. We've got the broken snapshot. It fixes. Run it again. Let's see real quick what our issue is and because it should. Unless it behaves slightly differently let's set the time Okay, yeah, maybe it's out of date or maybe there's a slight of ingest or maybe I'm just wrong. 
+
+[00:07:39] I was under the impression it does freeze it at the Unix epoch, but I could have been wrong. So we use fake timers and then I set the system time to whatever time I want if you want. If you hate this, you can put use new date and put in, you can set it any date you want. 
+
+[00:07:56] I just took the one that was in my snapshot and went with it. >> Basically, setting the system time to the fake time that you created on line six, okay. >> Yep. >> And could you write this yourself? Could you monkey patch date.now, store the real date.now in another function, and then restore it after the test? 
+
+[00:08:15] You absolutely could. You shouldn't, but you absolutely could. So this is now setting the time to one single point where it makes total sense to do that. Right, and so this will freeze it in one place. There are things that you can do, for a case of a snapshot test you can probably just freeze it, right? 
+
+[00:08:40] In the case of an animation, you might choose to move time forward, right? And you can do that you can also do a like set to a new system time, that you can add >> You could also do like a. >> Why? >> Yeah? >> Maybe I'm misunderstanding, but on line seven, instead of that number, couldn't you put line six inside of those parentheses? 
+
+[00:09:08] Or is that line six to a variable and then put that variable in the parentheses? >> What's the, the variable is just freezing time. >> Yeah. >> Yeah, line six is freezing time? >> Yep. >> The value actually came from the snapshot. >> Yeah, I don't super understand what, is there extra complexity or a problem? 
+
+[00:09:28] You said not to do this, to do the date object. I feel like I do one time >> One, like for me, so for instance, I was like the use case that I had, I'm actually displaying this number. So great, right. The use case that I had of If I like and I chose very specific dates, I chose January 1st of that year, right? 
+
+[00:09:48] Cause it's easy in my head to do what was one month earlier, December 1. So if you're that's the logic that you're using on the use case your app, yeah we'll put in new date right of we're doing the math, right? Any form of a representation of a date will work, right? 
+
+[00:10:07] And so, new date also, it's can I live remember the various syntaxes you can hand to new date I'm not entirely confident that I could. We'll find out together, that was also part of it, is the fun parts of live coding. That does work so yeah, if your logic is like, let's say you're writing a function that is like. 
+
+[00:10:34] Four hours ago on a blog post and for some reason you're not using a library for reasons I don't understand. That's not true, all those date libraries are terrible. But like you could theoretically choose to do something like this as well. And so, this will like freeze it at that as that particular date or something along those lines. 
+
+[00:10:55] So, whenever you rerun the snapshot. It's still going to do that right there >> Yep >> Yea, it's set to that day so things where you need anything where you can do this for any like effective like random number right. If I do something like get to dues which is like I told you we hit an API That randomly hits, it 
+
+[00:11:17] randomly shuffles like 5 blog posts, right? It breaks again. This one has a closing UL tag so update. Yeah, be great. Just update the snapshot. That's why you don't you snapshots, by the way. Now that one works. We can I got to check that one out and see if I broke something. 
+
+[00:11:39] But you could also in this point, choose to stub out math.random, right? I wonder if faking the time breaks for reasons I don't understand. But you can choose to stop any of these things for things you don't control, right? The other things, the one thing you wanna make sure that you do in this case though is you wanna say after each. 
+
+[00:11:58] What do you think you do in this case? >> Set the time back to reality? Yeah, like you need to make sure and I'll talk about these in a second as well. But here we go. So we've got we have. >> Clear all timers? >> Use real timers again, so that will put everything back after every test. 
+
+[00:12:28] Now your tests should run in isolation in the modern era. >> A lot of these API methods are from older test suites. These days in the modern era, most of your tests will run in a separate process. And there's less likelihood that you'll leak out but like yeah it's nice to be able to switch out Jest provide tests and not have to like worry about cleaning that stuff out. 
+
+[00:12:50] Jest will also I believe to that as well. But like I'm not sure what Mocha does for instance. >> afterEach above the tests, is it still gonna do it after it will still do it after? >> This is now a question of like, what do you like more. 
+
+[00:13:06] Reading it yeah. >> Yeah. >> How do you like. >> Right, this is more likely that you're not gonna mess it up. The other one feels right. >> Yeah [LAUGH]. >> [LAUGH] Right, it doesn't matter. >> Feels right to you [LAUGH]. >> Yeah, exactly, right, and this is why programmers are terrible people. 
+
+[00:13:20] >> [LAUGH] >> And I have to import after each, or things won't work. And again, there are certain things in this workshop, particularly when we talked about playwriting a second where like could some of these things deserve their own entire workshop? In fact, I think for unit testing, there is one. 
+
+[00:13:36] For Cyprus, there is one. I did it. It's great. You should watch it. For playright, there presently isn't one. So we'd like for some of these, we're doing the high level version of this. To kind of show you the wide range of tools that you can deploy in various ways to solve common problems. 
+
+[00:13:50] And when you can and cannot use them in a large code base. But these these will work for special things. Time I'm okay with things I don't control. I mostly harping on this because I it is a talk that I have to have with people, I work with, you know what I mean? 
+
+[00:14:04] Like I the general thought process around this is a little bit dangerous. So this is like one of the hills I'm willing to die on. So you can start time. Like again if we wanted to, for instance, mock out like, fetch, you could do that here to get the API request. 
+
+[00:14:21] Whatever you need to do to get this like stabilised. So again you notice that I'm not talking like actually doing the mock up of an API cuz I want to show you a better way that is kind of newish. And we will kind of you know let's transition to what I've made my point about mocks
+
+---
+
+# 39. Mocking API Requests
+
+[00:00:00] >> So I argued if you were back end engineer, you would have a lot more of a grace from me to mock stuff out, right? Systems, writing to the database, maybe don't choose to do it, credit cards awesome, right? Like all sorts of stuff that you shouldn't do. 
+
+[00:00:20] Front end engineers, it's like time, random UUIDs, Random sorting, And then the last one, which I keep skirting around is API requests. So the meta point that I was trying to build to is on a periphery, the best practice for a really long time, and if you still do it, you have no judgment from me, is mocking out fetch. 
+
+[00:00:47] XAHR callback, wow, I don't remember HCG. I don't even remember what the old event was that fetches based on two big ajax requests before fat. That's, that's the sign the times are changing XML HTTP request. There it is, objects, whatever. You could do all of those things, the thing is mobile phones exist and one of the things that exist on mobile phones these days are progressive web apps with offline mode. 
+
+[00:01:18] And those are powered by service workers. Service workers exist behind the scenes and they run outside the browser context. Their main job is they intercept network request so that you can have stuff like offline mode and stuff like that. And then instead of going and hitting the network, you can check the cache API, right? 
+
+[00:01:37] Or read from indexedDB and respond to network requests without calling out to the network. You can intercept network requests from outside of your app and respond to them without hitting the network. So could you mock and stub out fetch or Axios or what have you, but that's now code you're not covering, right? 
+
+[00:01:58] Cuz you mocked it out and replaced it, which means that code coverage tool is never hitting those things, right? It would be really cool if we could get all the way to the edge of what we control, which is basically outside of our browser context, right? And then intercept it, and this is a library that is really exciting. 
+
+[00:02:19] And the one of the reasons I wanna call it out is test, yeah, sure, sure, sure. I aspire every company I work out that I should be able to develop on an airplane. Which means in a perfect world, my environment should be set up in such a way that I don't need a network connection to work on my thing. 
+
+[00:02:37] There's some jokes about the amount I need to npm install to get my job done, but that's not important. But one of the things that you can do nowadays, if you look at this given code example right here, for mock service worker, it looks almost like an express app if you squint, right? 
+
+[00:02:56] It's basically you can just write a layer that fakes out your API. The various ways I've done this over time, which is one, just spinning up an express server that you actually talk to. And just having an environment variable go into local host, whatever port versus like something else. 
+
+[00:03:12] There's different ways that people have done this in the past. This is really great, it sets up a service worker in the context. And what's really great about it is you can use it in your tests to simulate the network, do you know where else you can use it? 
+
+[00:03:26] In development, and so this now goes back away from testing and more back to our core enterprise app stuff, right? Occasionally, I don't know if this ever happened any you all. You need to work on something before the API is ready. And maybe there's a deadline and the backend team says we're totally gonna have the API done three months before that deadline? 
+
+[00:03:54] Has that ever happened to anyone where they actually got it done on time? No, no, software engineers don't make good guesses backend or frontend, right? We were sandbagging when we said three months, we thought we could do two, it took us four, and it took them four, right? 
+
+[00:04:07] We had a four-month window to begin with. So what's really great about this is that you can, just for the API that you need to, like you don't have to, it's not an all or nothing thing. It will intercept anything, to, in this case, in this example, we have on page a post on a REST API to /login. 
+
+[00:04:24] And then you can control it and do the response. I think a question one of you asked me earlier, right? When is it okay? This is like, we're still sending out the network requests as far as the browser is concerned, right? It's just somebody's catching it right outside and handing it back to us. 
+
+[00:04:40] So you can do all your APIs, you can do just a few of them, right? You can also have it if you like want it to blow up. If it's an unhandled request, you can set that as well. But you can either a in your tests, start up one of these like mock service workers to basically pretend to be a server. 
+
+[00:04:56] So you're not patching, you're not monkey patching, fetch. You're not doing any of those things. Basically your code is running as it would in the browser. There's just something like outside. It's like we didn't feel bad when we use JS Dom, did we? I mean, maybe you did, I don't know, I didn't feel bad, right? 
+
+[00:05:13] And the same is true here, where your code is running the same way it will in production, right? And your tests are actually like, your mocking is happening outside of what you control in the truest sense, and it's super powerful. But also I am doing it like a specialized sales pitch for this test. 
+
+[00:05:30] Yeah, sure, sure, sure. Great for development, for APIs that are not done yet, for all sorts of different things, or even simulating stuff that you need to simulate in a certain way. A lot of times you might get a bug report. And like you can't get the server to do that thing. 
+
+[00:05:47] And so you're using the app to try to get like staging into some weird condition where you can recreate it here, you can literally take the API response, have it be the thing, right? Just use it kind of in development as well. Especially in a large application, there's tons of things you do not control, there are services you don't own. 
+
+[00:06:05] And so this allows you to put them in various states and simulate a network, could you spin up your own development server? You could, but now that's the thing that you gotta spin up next to it. This is basically you can do, if process.nodeenv = development, spin up the service worker, right? 
+
+[00:06:23] Or have something where you don't have it running, or something along those lines. You can have pieces of your code, depending on where they're running. Just basically use this and then your code is running the true way that it would normally run, which will give you a lot more confidence. 
+
+[00:06:35] So again, some of these things like around mocking stubbing are worthy of more than we have our time and attention for and are distracting from the meta point that we're trying to do. Which is how do you kind of put the metal suit armor around the planet and not unleash Ultron there, I made the Marvel reference. 
+
+[00:06:52] We can close this section out with that. I made it all the way to the end. How do you put this around your app so that you can begin doing these important refactors? I think this is a really great way to do that, right? You can simulate these things, but not actually put a lot of conditional logic in your code.
+
+---
+
+# 40. Playwright Overview
+
+[00:00:00] >> This last leg of this workshop is called, things that Steve is really excited about, mock service worker. Let's talk about Playwright. So we talked a lot about the unit tests. Great, fast, awesome. Not super great forgetting that sanity check very early on when you are either, maybe it's a bad code base of your own, maybe you're responsible, maybe you inherited it. 
+
+[00:00:26] I'm saying that you inherited it just to give everyone a feeling, but some of you are like, no, I did this. Honestly, to be clear, there's a lot of reasons why your test coverage might suck that are your fault. A lot of reasons why your test coverage might be bad that's your fault, but then choosing editing which one they like. 
+
+[00:00:47] I think a lot about like a year ago we we did this rush to build out this Admin dashboard for managing a whole bunch of stuff around our SaaS product, right? Because previously if you wanted to add a user, you filled a Zendesk ticket and someone from engineering did it. 
+
+[00:01:02] There's a cap on how many customers we can onboard when you're doing stuff manually, right? And it was uncalled for the cloud team was terrible. So we chose to do one of those mad dashes, right, and get some stuff done. And the APIs came late, as I joked about before, but we had stuff, so we were good but integration was hard. 
+
+[00:01:19] But we were also still figuring out, the designs were changing. So did we write really great tests? No, because we didn't even know the full shape of the thing yet, right? And like, yeah, we threw it together somewhat quickly, right? And so there have been times, honestly, in the last nine months that I have been responsible for code bases that I would be embarrassed about demoing in front of you, right? 
+
+[00:01:42] And for really good reasons that I'm very comfortable with having made, absolutely, right? So then the question is like how do you actually know this thing works in the perspective of a customer or user? And then also the way that I'm mostly going to kind of spin this because again we did an entire workshop on Cypress. 
+
+[00:02:00] We should probably do an entire one on Playwright at some point. Right, talk to Mark. But the theme that we're gonna kinda focus on here for our purposes is how do we use this tool? To the question someone said before about what 20% and what 80% are you covering, right? 
+
+[00:02:20] How can we use this tool for rapidly getting some sanity around this code base? And so we're not gonna go all the way into everything Playwright does. We are going to do the high level of, here is the 20% that you need to know that will make your life a lot easier. 
+
+[00:02:41] And then we can kind of build on it from there. So, with that, let's do a quick like just read everyone on what Playwright is. The prior iterations of Playwright have gone by other names. I mean, they've been different technologies. You might have used like WebDriver.io, Selenium which is the Jenkins of why I'm gonna get so many emails. 
+
+[00:03:11] There's Selenium, there's WebDriver, Cypress, Playwright is the latest hotness and for good merit right now just because it's the newest. There is a protocol for interaction and driving Chrome. It's either the Chrome Developer, a CDP, kind of basically driving operating Chrome. It's like if you use like puppeteer, the same basic kind of concept. 
+
+[00:03:40] That team I believe it's at least somewhat owned as a strong word maintained by Microsoft this point. But the team did work to kind of build the same bindings for Firefox and even WebKit/Safari, so you can drive all these things based on the modern, latest and greatest JavaScript tooling. 
+
+[00:04:04] Cuz I was like I've joked and alluded too between ES modules and TypesSripty stuff, right? The ecosystem has like done one of those like giant quantum leaps in the last few years where even just in Cypress and I to be clear I still have a slightly older version of Cypress like things that don't support ES modules like Storybook was guilty of this. 
+
+[00:04:27] There's a lot of things that basically became untenable in modern apps because they were built on common js cuz that's what existed at the time. So in a new app I would definitely say stuff that if it were a modern app, cool. You might still choose to use like all this stuff will work too with the older stuff as well. 
+
+[00:04:43] But, so it does bring a lot of that modern module system build processes to the table. It also does drive Firefox and even Safari cuz Safari is a weird one these days. And allows you to do a bunch of really great stuff for basically spinning up a bunch of browsers, navigating through them. 
+
+[00:05:03] And kind of kicking the tires on it. And like I said, honestly a few really good integration tests. So one of the questions from the chat before if they break, won't give you a lot of insight to why they broke cuz they are far from the implementation. But a few really good browser based integration tests will at least give you the confidence that everything works, right? 
+
+[00:05:27] Not a lot of insight when it doesn't. But giving you a lot of confidence that things actually work the way that you want and getting you to the point where you can start on that large scale refactor. And trying to pay down that tech debt without losing your mind in the process.
+
+---
+
+# 41. Playwright Setup
+
+[00:00:00] >> We have a second repo for this. Purposely these are not built in React, these are built in Svelte, mostly to point, this should not be a framework specific course, despite my case study on my own Redux issue earlier. But there's a bunch of just apps where we can drive it on cuz theoretically, your user does not care whether or not using Svelte or Vue, or Angular, or Backbone, or jQuery, or React or what have you. 
+
+[00:00:28] They're going to a website, half the Internet is probably still WordPress and jQuery to be honest, despite what you read on Hacker News. And so you can go, and so one of the ways unique to our interest in this workshop, where I would say that this is a really great option is, if you're doing every few year framework switch, right? 
+
+[00:00:53] That never actually happens, you're always about to do it, and then you end up like three React pages and a Backbone app. And so this is a great way to kind of build yourself the infrastructure to begin figuring that out, and moving stuff and doing the large refactor, and stuff along those lines. 
+
+[00:01:07] Ideally, unless I have made some terrible mistakes, which I might have, we can set up Playwright using npx, let me just check it out real quick. So you got this, basically, what it will do is it will pull down all the browsers. So, we will go ahead and we will get started here. 
+
+[00:01:34] How to install Playwright? Npm init playwrightlatest. Again, I use npm normal, so that'll do it as well. But here we've got it, where we can do npm init. That's one of those commands which you run once in a repo and then good luck trying to remember. For a lot of you, it will start to ask you a bunch of questions on where you want things to go. 
+
+[00:02:04] I don't like E2E. I like this question. Add a GitHub Actions workflow? Don't mind if I do, right, absolutely. Install the Playwright browsers? That seems like I need it, now I probably have it in my cache. That probably went way faster for me, but that's okay. One thing you notice and I just say this in case you have a need for it, it can go on the internet and do things too, right? 
+
+[00:02:37] It can go to any URL, you give it. So if you want to automate a browser to do things. And when we see some of the other tooling, you'll see why that could be useful for all sorts of terrible reasons. So some things that I would like to call out, that I think are super interesting for our purposes, and it may be partially intentional on my part is to look at how a Playwright test is structured. 
+
+[00:03:07] All right, it's got a test, it has a title. They are all async functions cuz we're controlling a browser, let's be clear here. You do get this page object passed in, all right? And there's some other things in there as well. But it's really interesting how you find stuff on the page. 
+
+[00:03:25] It effectively has the same syntax or API as the testing library stuff that we did earlier, right? So for instance, if you're like, hey, it was really great to see that we talked about some of the nuances of component testing and we discovered some the laughs that we had along the way, I don't have that. 
+
+[00:03:49] That many component tests, to be totally honest with you. Partially, cuz I didn't like enzyme as much, right? There's lots of reasons. I do think that for me, it is unit tests and Playwright tests predominantly, right? And so I think some other people have a lot of component tests. 
+
+[00:04:09] I'm kind of scooped in the middle, I've got the unit tests in that spectrum. And I've got these, but that's just my taste and I don't want to enforce my tastes on you, which I've definitely been doing, but it's fine. But generally speaking, I like this as well but the trade off is slower. 
+
+[00:04:27] And when it breaks you're not gonna get anything log to the console with the diff of the snapshot and why it's broken, right? If you can figure it out, but it's gonna be a little bit different. But the important part that I bring up here is it lives other than some awaits. 
+
+[00:04:44] And the idea that there are methods here instead of having to use user event or fire event, and you can't actually fire events, because this is truly your driving a browser like a customer would. You have to almost do this stuff, like we're building up to something on purpose. 
+
+[00:05:00] And you can click as a method this time. So there's little nuances here, but generally speaking, super powerful for kinda spinning up. So, let's go ahead and let's do npx Playwright test. Let's hope that I picked the right repo, I don't embarrass myself once again. It's Chromeum and WebKit and all those things, and then it shows me a report, right? 
+
+[00:05:29] The report is an HTML file. Let's go run that as well. Cool, and you can see all the different tests, it says, do you have a title? And I can see everything in here as well. And this is really not all that interesting, shows you everything so on and so forth. 
+
+[00:05:48] What I would like to bring your attention to is, there are ways you can do everything if you don't have VS Code, but I haven't walked around the room, looks like almost, is anyone not using VS Code? All right, cool. There is a plugin, you don't need it, that does that kind of test filtering that we saw before, where I can run a given test. 
+
+[00:06:11] It also has a hotkey, which is Cmd+; and then the letter L, we'll run the last test again, which I believe also works with Vitest. If you've got that plug in as well, so you can do, if not, I still go and run npm test, or later watching cuz I just muscle memory, but it's typical. 
+
+[00:06:30] And you're gonna run these tests like this as well. And this one will spin up the browser, and you'll kind of see it do its thing, and it will leave the browser open. And that is somewhat an important point that we're going to deal with. Also, you'll notice that if you have the plugin installed, I mean, you can not leave the browser open as well, that's a thing. 
+
+[00:06:51] But I really like these, and this will relate back to, even if you're like, no, I like my component tests. There is a reason why you might still do some of your components tests developing in Playwright as well. The big question is, with my screen this zoomed in, can I show two windows at once? 
+
+[00:07:11] We're gonna find out together. I'll put that one over there, put that one over there. Yeah, that works. We'll close this sidebar, and one of the things you can, I needed the sidebar, you can do this pick locator. And you can see, look at that. People ask me before, how did you know that thing had the role? 
+
+[00:07:40] I cheated [LAUGH] I cheated hours ago. Honestly, a year ago to the point where that's how I kind of have an intuitive sense about these things. >> That's from the Playwright extension? >> Yeah. And it spun up this browser and then it puts it in here. >> That's awesome. 
+
+[00:07:58] >> And then, it'll paste it on my clipboard or whatever, right? So that will give me, and I'd have to have the page dot, right? I picked the same one for funny reasons, cuz it was a button on a page. We know that the simple finding of that button means that it is on the page. 
+
+[00:08:26] If that button was to not exist, so for instance, This one will definitely not exist, and then we were to run the test, it'll fail. So, right, minor, right? Don't embarrass me. >> I think, yeah. Should it fail like that, with the click? >> The big question about having used that many frameworks much in a row is, am I slightly mistaken or did it just not run again? 
+
+[00:09:07] We'll see. >> Cuz the expect would be true no matter what, you've already clicked on the first link. >> But not finding it should fail, but also did I actually run them, was I talking, was I really paying attention? I don't really know. You usually know that you're in bad shape, because the wait for and testing library, animations happen, network requests take a certain amount of time, especially cuz we're the real world at this point, right? 
+
+[00:09:33] It is driving this browser, and things take time, so you can see it's got a test timeout of 30,000 milliseconds for those keeping track at home, that's 30 seconds. And so, you can tell by the spinning that things are gonna go poorly. This sidebar plugin is great when it's great. 
+
+[00:09:59] If you try to cancel tests midway through, you will end up in a bad state [LAUGH]. It is great when it works, and if you get into a weird state, you need to quit VS Code and open it again. That said, what it does, well, it does so amazing that we deal with its peculiarities. 
+
+[00:10:20] At certain points, this test fails, cuz it tried to click on a thing that didn't exist. Maybe I'm just mixing up, it might be a different selector as well. But yeah, so what's super powerful here is, you saw how easy it was to get a selector. Don't worry, this gets better. 
+
+[00:10:39] You saw how easy it is to get a selector, and you know that if you had three, four, five, ten, one test that went through and hit all the critical parts of your code base, right? Can you be relatively certain that you didn't break anything in a very serious way? 
+
+[00:11:00] Yeah, right? And that's, I think, one of the really kind of powerful parts.
+
+---
+
+# 42. Playwright Configuration
+
+[00:00:00] >> I do wanna kind of just do a quick tour of a few things here as well. The one thing that for one of these example apps, there is a database that you need. So if we choose to use that one, you will just have to seed the database because I decided to be a back-end engineer for a hot minute, just to show some stuff, but that's there as well. 
+
+[00:00:21] But the part that I wanted to go into was this Playwright configuration, where a lot of things are configurable. If you wanted to make an e2e directory, which I don't like acronyms, you'll notice if you read like the copious notes that I wrote. I will spell out Visual Studio Code every time instead of writing VS Code. 
+
+[00:00:39] You can set the timeout for both a test as well as for a given expect. Fully parallel will mean that it will spin up, depending on how many cores in your computer, that many threads running in a browser. Most CICD processes I think you're still down to one. 
+
+[00:00:57] It'll try twice in CICD before failing your build 0 if you're developing, so you get that tighter feedback loop, but hopefully protection against flaky tests. How many workers do you have? The reporter, we saw the HTML. We'll play around with some stuff in here a little bit. This one is probably the one you'll most likely end up using, which is this way, you don't have to type in a full URL. 
+
+[00:01:19] If you don't put the protocol, it'll assume this, change that to whatever you use. You can do interesting things with environment variables, so you could do something like, hey, do this and last like, we're in, like the CICD process or unless like I choose targeting and staging. One of the things that I have done previously, is I will have the base URL for my app as an environment variable. 
+
+[00:01:47] So I can point the development server and its APIs at mocks or I can point it at production, right? Because every back-end team likes to tell you that staging should be a perfect representation of production that has never been the case ever. So I can point my front-end app at staging, at production, at development. 
+
+[00:02:08] So you might choose to do something there as well. If you don't want all the browsers, a project and just do dash project chromium, it will run all of them. You can do interesting things here as well, which is like what tests you wanna run. Also like various different, this way, you're not doing the thing. 
+
+[00:02:27] I understand that the browser has all the device emulators. We all do the same thing, which is we make our window real skinny, right? And then, we make it wide again, and then we make it skinny, and then we make it wide, right? This will run your tests, saving you from that. 
+
+[00:02:42] This one will also be somewhat useful to us, which is folder for test artifacts. Right, if only I had a way to store my artifacts, my build process, I could look at them later. This one, I also deeply love and we'll probably just comment out. It does not work with the VS Code plugin, but this one when you run the test, will also spin up your server too. 
+
+[00:03:11] Because nobody likes the thing where you go to run the test and realize that they killed off the server, and then your tests all fail. And then, you realize that you testes didn't fail, the server just wasn't running. So you can have it like whatever your whatever port you choose run on, whatever command it takes to spin up your app, you can have it so that when you do npx playwright test, it will also spin up your web server and life will be amazing.
+
+---
+
+# 43. Writing Playwright Tests
+
+[00:00:00] >> We will make a new test file. I mean, I could write in this one too, but, I do pokemon.spec.ts. Out of the box, it uses spec. Could you change that? You could. Why am I using spec? Because Vitest was looking for test [LAUGH], right? And so by the file name, Playwright will run the spec files, if I just run the test files, and never the twain shall meet. 
+
+[00:00:36] If you don't like spec and you don't have Vitest, do whatever you want. Change it to whatever makes you happy. That right now makes me fairly happy as we kind of go through and we do our thing. Cool, it's got that base one in there. So I'm gonna spin up my app real quick so we can take a look at it, And make sure it works before I start. 
+
+[00:01:10] I started testing out but I pulled the wrong repo. So there are a bunch of different apps that you can choose to test. Basically it's got just dumb stuff to play around in, right? This is basically my sample playground. We're not gonna do everything in here, but if you want to try different things, that's why it puts a stupid toast notification that vanishes, all sorts of stuff like that. 
+
+[00:01:35] As a fun playground, this is my perverse idea of fun. It's got file downloads, it's got everything you could possibly want. It says, input obstacles from before that you can drive and do things with. This is actually the one that has a database and has auth, so you can log in and sign up and analyze the cookie. 
+
+[00:01:57] So if you want to try out stuff like, again, if we do a full version of this, we can go all the way in, this is the Pokeman search, which is the one I'm gonna try out. And you will also notice that the query param automatically updates, so I could test stuff like that as well. 
+
+[00:02:13] I have full control over the browser. I don't have to use JS DOM or anything along those lines. I can see stuff, it's like a full on spa. I think some of them are server-side rendered where I can see views within views. You can get facts about dogs, right? 
+
+[00:02:30] So if you wanna step out different network requests, you can play and put this on, I think you can write to the clipboard. All those things are things you can test in Playwright. Obviously, I'm gonna do all those. My goal today is to show you how you might weaponize this tool to get as much sanity around your gnarly codebase as you possibly can as quickly as possible. 
+
+[00:02:50] With that, we'll go through writing a test real quick, and then I will show you that for our purposes when it comes to the theme of our time together, we're not gonna write that many tests. And I will show you why I think that for getting sanity around your code base. 
+
+[00:03:06] I am now thinking that maybe I should just open the workshop with this, but then it would have made everything else less fun. So this feels like a crescendo at the end. Cool, so let's go ahead and look at kinda some of the differences here. Your test and expect, this one come from Playwright test instead of Vitest. 
+
+[00:03:26] You don't have a describe because it's test.describe does the same thing. We'll grab those and we will do test. It has an input field, input field- >> Could you use it instead of test here? >> I don't think so. Yeah, now I know that because I tried that earlier today cuz I expected someone would ask me that question. 
+
+[00:03:52] There's the things that you just do, and then when you're preparing for these things, what questions are people gonna ask me? Yeah, input field for searching for pokemans. Cool and that's an async function. Also in the other repo, I gave you some code snippets so you never have to do stuff like that. 
+
+[00:04:15] You could steal them, they are there as a hidden treat in the VS Code directory. It has an input, For pokemans. Awesome, I should have actually called it Pokemans, so I don't get a seasoned letter, but here we are. Awesome, so what will we seek to do here? 
+
+[00:04:40] Let's write a simple test. And so, first thing we wanna do is, did I put the base URL on? This is one of those things where I'm going where the spirit takes me. Did I set a base? Yeah, I did. Look at me go. Awesome, so we'll start with await page.goto("/pokeman-search"). 
+
+[00:05:09] Right, that's an argument that gets passed in here. There are no globals to speak of. Honestly, for a smoke test, [LAUGH] did your server start up at all, right? Cool, and then we can go ahead, I can run it. We did have that failing test in there intentionally. 
+
+[00:05:33] That's what was hanging out for those 30 seconds. It's because I literally had that test where I tried to make it fail. So we'll go ahead and get rid of that one. Let's get rid of that file completely. Cool, I wonder if that's why stuff was breaking in here before. 
+
+[00:05:48] Yeah, okay, cool. This works better if you have more than one monitor. Let's see cuz everything's failing me at this point. But let's take a look. So yeah, you can hover over and get a sense of everything on the page and what the selector is. The other really powerful thing that I absolutely love is, and I wonder cuz I got some weird highlight that will not go away, in this case as well. 
+
+[00:06:23] I don't care about that anymore, sure. I can do page.getByRole. And I can do input, Or even a button or something like that. One thing, things are being weird for me now, was actually as I was typing earlier, it would highlight the thing in the browser as I was typing it. 
+
+[00:06:51] So I would get the visual feedback as well. Yeah, I do get my testID search. So let's kind of show what this would look like, page. Yeah, there you can see it, right? I'm just typing and it's highlighting that for me based on where my cursor is in VS Code. 
+
+[00:07:21] If I have a matching selector, it shows it for me in Chrome. And that I should not be that amused by something that simple and here I am, right? And so I've got that. And it will show it to me. So that integration is super important. What I am trying to kind of iterate towards is showing how we can use this to get a lot of sensibility around stuff. 
+
+[00:07:56] So just to show you real quick, I can also like, if I grab this, you can see like that works. And you can even see what selector matched it, like a partial match in this case on the placeholder did get it for me. So little changes shouldn't break your test. 
+
+[00:08:12] Like Playwright, more so than testing library, is built to be somewhat resilient despite the struggle bus that I just rode on for a little bit with the plugin having an errant port running. But for whatever I'm running, I get that visual feedback as I'm moving through the code, what I have and stuff along those lines. 
+
+[00:08:29] So, for instance, we could do something with whatever one, say, I want. I'm gonna just kinda move this a little bit so we can see. So I've got the search input. I can take that and I can then say, wait, we should do searchInput.type(), and we'll do 'pika'. 
+
+[00:08:46] And we'll do page.getByRole (), we'll look for a link. And look at the background. If I'm like, what was it again? I get all of the help. The problem is moving my cursor ruins it. You have to trust that on a bigger monitor or two screens, it's pretty dope. 
+
+[00:09:12] Get role by link, let's make that happen again. Now it's gonna fail me again. We'll do {name: 'pikachu'}. Cool, and do I hit that button again and have it fail me? We'll find out. Yeah, unclear versus a restart. What's gonna happen there? If I have to do that, I will do it quickly so that we can kind of pull this train into the station. 
+
+[00:09:42] But let's see if I can kinda get to the main point without that, cuz it's one of those things where 60% of the time it works every time. But I probably have some other errant process on some process ID that, other than a restart, nobody wants to watch me find at this point. 
+
+[00:09:57] But we could also run that test. Actually, I will get an error if I try to run the test, and I want to show you that error. npx playwright test. It is gonna yell at me that something is running on that port, and it's gonna say, hey, if that's cool with you and you don't wanna make sure that we're the only thing on that port, you can have this setting to reuse existing server is true. 
+
+[00:10:24] I use this a lot because I'm developing, and that's really great for CICD, I spin it up, I wanna run it. But if I have one running just use that one. And so I will do that. We'll pop that setting in here as well. Cool, and now I should be able to run my thing, and it will run it across all of them, and three tests and everything is good, right?
+
+---
+
+# 44. Recording Tests
+
+[00:00:00] >> As we showed before, I can go and pick something here as well and get that, and it'll put it on my clipboard for me to use. That is great, and then I can see the visual feedback. But on the theme, cuz again, like I said before, I think that Playwright is probably a course in and of itself, or a workshop in and of itself. 
+
+[00:00:20] But in the terms of like, I need sanity around my app cuz I'm tired of getting paged, and I need to do this big refactor, and I need to put some of this stuff in place ASAP, right? And I understand the trade-offs from unit tests all the way through, I'm here for it. 
+
+[00:00:35] I think one of the most powerful things that you can do with this, is you've got record at cursor and record new. Let's do record new, that way I don't have to worry where my cursor is. And it spins up a browser, we will go to localhost 3000. 
+
+[00:00:53] Would you wanna, maybe, just change that to the slash? Probably, right, if you had the base URL set. There are little things you might want to tweak, but go in here, click on that, type in, we want a Charizard, that's what we wanted before? Charizard, we click that. 
+
+[00:01:09] We'll see it rendered on the page. There's not a lot of other stuff to clicks. Let's go over to secret menu. You could literally spin this up, just drive through your entire app in one mega test, right? Just in terms of sanity check we'll go pick KFC, by the way, when I talk about things I do when I should be working on my workshop, finding a dataset for all of the secret menu items at all the fast food restaurants. 
+
+[00:01:35] And then massaging and parsing that data into a table, and then building stupid rating sliders, is a thing that I did. [LAUGH] Right, because that was the best use of my time. And yeah, the fact that there's table div scroll, that didn't happen on its own. And what else can we do? 
+
+[00:01:59] We go in here. Let's go sign up for an account. I have made so many weird email addresses. And I get that feedback of what everything is. Let's say live coding, because there's definitely no way that I did that earlier, @gmail.com. This doesn't send any emails. >> Is the scrollable table div accessible? 
+
+[00:02:19] >> I have no idea. This is mostly I wonder if table divs can scroll. >> I wanna do that, but I don't think the accessibility team would like that. Tom. >> The best part is I was talking, I don't even remember what email and password I used, but luckily if you look over to the right, this entire test is being recorded. 
+
+[00:02:35] So I could theoretically look at my own thing. Okay, there's some stuff in the database over here, I would really like to see what I'm doing here. So we can go ahead, I can write a new thing which is, restarting computers is the best, hit Enter. There it is. 
+
+[00:02:55] This is in case I wanted to tweet and I have something stupid to say, I can just write it in this app and everything's fine. Updated, given maybe an exclamation point or two, maybe not. I found how to bug him out, right, I can't edit that. We'll go close out, then we will sign out. 
+
+[00:03:15] I don't know, whatever you wanna do. I think I've made my point. So then we can go back here and we can hit Cancel. And what you see, it's possibly the ramblings of a madman. But in a lot of ways, effectively the test it does, cover a lot of my app, right? 
+
+[00:03:36] And gives me, at least in terms of like, hey, is this thing doing the thing? Is it running? Can I navigate around? Am I seeing the things I'm supposed to see, right? When I do that much, well, maybe pausing and do a few expectations every once in a while, I probably would. 
+
+[00:03:53] There are things that you need to fill in, in my experience, and it might just be my bad coding, but I had to change some of these to type. It also helps me figure out where my locators are less than ideal. That's because there should be no dash in between those two, right? 
+
+[00:04:13] So also like a great sanity check, cuz I didn't know that I made that boo-boo, you would have watched me try to type and not have it not work. I changed this to just a slash, so on and so forth, all sorts of stuff. There was just random stuff that I, well, I didn't really know what password I was gonna use. 
+
+[00:04:28] There you go, wow! >> I noticed you had deleted one of your passwords. Looks like that Line 19 there right above your cursor, Meta+a, is that a delete key? >> That's a command I have for select all. >> All right. >> Yeah, right? >> And then you just typed over it, I see. 
+
+[00:04:42] >> Yeah, I was talking, I was like, I wonder how many letters I hit I don't remember, let me start over, right? So yeah, you would probably do some cleaning up here. But in terms of verifying that all the stuff in place, can you click these things, can you navigate, and stuff along those lines. 
+
+[00:04:57] This will get you a lot of bang for a relatively small buck relatively quickly. And since it will go anywhere on the Internet, you can drive a browser, you can use that information for anything you want. And even with GitHub workflows, you can schedule them. I don't know when tickets go on sale. 
+
+[00:05:16] Whatever, all sorts of stuff that you can do, Justin. >> How would you do this if you're not using the VS Code plugin? >> Yeah, you definitely don't have to do the VS Code plugin. The nice part is there's the record new, which will make a new file. 
+
+[00:05:29] Cuz these are all protocols in actually Playwright in driving Chromium itself. A lot of that stuff is cool. There are reasons why you might not want to do it from here other than the fact that, like I said before, this extension is somewhat wonderful. But also did cause me to have to restart my computer cuz I had some errant process that I couldn't kill off. 
+
+[00:05:52] So if you want to do it from the command line, you can do npx playwright and codegen. And this will kinda start up the Playwright inspector, which will look somewhat similar with a record button, That you can turn off and on. So we'll go ahead, get everything where I want. 
+
+[00:06:24] I can hit Record, I can go here, I can navigate around, I can do some things. Close that modal, so on and so forth, and get a lot of this stuff in place as well. And then you could copy this. The other thing is this will set up a Playwright test for you. 
+
+[00:06:47] Also, Playwright supports these other languages that I don't care about. You could also, if you wanna, actually just run it as a script that controls a browser, you can switch it to library, and this will now be a node package. You can just do node, whatever, and it will do all of this stuff for you for various non-descript reasons that you might choose to have happen in your life.
+
+---
+
+# 45. Creating Screenshots
+
+[00:00:00] >> That said, there are a few more things that I would like to bring your attention to. In the name of how do I get as much test coverage as I possibly can as fast as possible. So let's say we have a test. You know what this test is as good as any. 
+
+[00:00:19] Except for the fact that I hit record. I hit record from the base URL. Let's go, this is a little bit of a simpler test. So we've got that in place. Let's go ahead and. Let's grab- >> Was there a weirdness with the copy paste in that big text? 
+
+[00:00:49] There's no spaces between the restaurants, not sure if that's important. >> Where? >> Line 6. >> I probably need a better selector. That's probably the select box which clearly needed a better data ID. >> Sure. >> Right so, because there was either no data ID. Or I messed up on the accessibility for that one. 
+
+[00:01:07] Again, you end up making better choices, this is literally just grabbed an old app. And I thought it was better. Because it is a two-year-old app that I haven't looked at. And I can just get test coverage for it. It's like using a beta version of SvelteKit, which is possibly part of my problem right now. 
+
+[00:01:23] And, yes, that's probably I need probably either a role. Or like at least a data ID or something along those lines. I'm guaranteeing you if I looked at that code, it would fail the aXe violations on the component test. Because there's probably not a label, right. >> Going to catch those live coding issues though, as we go. 
+
+[00:01:43] >> And so yeah, that would probably fail it as well. With the aXe violation, but we can get most of the way there. You know what, let's actually say that we would like. Get by role combo box name is restaurant. I wonder what I clicked there that got me, let's see. 
+
+[00:02:03] I mean, I say that like I literally could not run this automated test and see. But it's actually not that important. So let's go ahead we'll say this get by role. I like this. And we're not good. Yeah, we'll select an option. I'm sure it will await that. 
+
+[00:02:20] Actually, I'm gonna do [INAUDIBLE] restaurant, Select. And then what we will do is we will go ahead and just use that. Sweet, and then what happens if I run that test? And I was just showing you, mostly trying to simulate my workflow. Other, also look in the VS Code one, you will get, I didn't go to the page. 
+
+[00:02:58] This is gonna fail. Don't cancel things because things end up like. This is all the playwrights stuff is great, the VS code plug-in. I'm sure people were like. The fact that it's unreliable is, just remember how magic it is like we all aspire to, What is the- >> Are you sayinc that stopping tests early is bad for the extension- 
+
+[00:03:26] >> It has hurt my feelings before and got me in a weird state. Now I didn't do that that's not what got me the weird state earlier. But I have been hurt by it before. >> Just for the extension. >> Just for the extension, yeah. Normally you can, yeah, go ahead in the command line. 
+
+[00:03:38] >> That's what I said. >> Command C to your heart's content. Let's go ahead and let's run that again. The nice part is like with the thing, it will usually leave my browser in that state. It seems Jack in the Box is picked. Could I get this entire table? 
+
+[00:03:56] Let's just grab this. Let's grab this element here, right? Cool and did I go paste now? Let's do the pick locator. Or get the entire page. It was the table. The table was our gross giant thing. Const table equals page that I get my text. Yeah, I should put a test ID on that and then I would get something a lot smaller, nicer. 
+
+[00:04:35] No, we're not doing that right now. This is about not refactoring your code immediately. This is about setting up the test infrastructure so you can refactor. Let's be intellectually honest about what we're doing. >> Cool, it's value, but never read. What I would like to bring your attention to is when it comes down to then, like. 
+
+[00:04:51] Getting those sanity checks, like clicking on stuff super great. But, here's an assertion that I can make real fast, that'll make my life a lot easier. So we'll call that table. And then we'll say maybe like to have, what's that one? To have screenshot. And I'm going to spoil where I'm going with this for a second. 
+
+[00:05:25] I don't know what the other one does. And let's go ahead and let's. I think this taken the most snapshot test fails the first time because there is no snapshot. And now it passess, right and if I look in my file system I got this new folder with snapshots go. 
+
+[00:05:50] And I have a visual image of the DOM as it was rendered in that moment. Right and so that I can theoretically not only automate a bunch of tests. But I can also take a bunch of screenshots. Also the to match snapshot will write a text file of the text content. 
+
+[00:06:08] Or whatever of a like if you grab if you say like. If you say h1.txt content or whatever you can actually write that to a file and have a validate that as well. So you can click around and do all these things. You can even just throw in a few like. 
+
+[00:06:23] Hey this text content should be what I think or should match the screenshot. Obviously you can put in a file name and separate it by what browser and what OS you're using, right. And stuff like that because Windows has different fonts. Safari makes everything shiny. >> [INAUDIBLE] space though? 
+
+[00:06:40] >> What's it? >> It must take up a bunch of space? >> Yeah. It's their images. They put a little bit of space. >> Yeah. >> Right, you got to do stuff. >> [INAUDIBLE] 100 pixels? >> That is the test will fail. If it takes another screenshot that has more than 100 pixels difference. 
+
+[00:06:58] >> [INAUDIBLE] >> And you're like, yeah, well kinda like map what pixels don't match. And you could have a threshold because maybe like, I don't know, like layouts are weird. You know what I mean like stuff can change a little bit. You don't necessarily want your tests to fail because of that. 
+
+[00:07:17] But you can set a threshold that you want to fail. And like you can very quickly get a whole bunch of test coverage really, really, really fast. Not great test coverage because cool, good luck figuring out why that div moved, right? But at least for a sanity check as you start to embark on that large refactor. 
+
+[00:07:35] And if you're moving to a different framework or you're trying to just untangle some stuff. Because you don't have to untangle so you can test it. But like In the absence of those tests, you don't know the breaking stuff. You could theoretically automate because otherwise, we all know how the tests were gonna work. 
+
+[00:07:52] It was gonna be you manually doing this better than that. And the fact that you could theoretically just stop. That you can comment out lines of code, the browser will be left exactly where it was. And then you can open up the developer tools and poke around is pretty powerful. 
+
+[00:08:07] But wait, there's more
+
+---
+
+# 46. Mocking APIs with Playwright
+
+[00:00:00] >> What about stuff like, okay, this is great, Steve. You're using a JSON files populating that data. We can say something like, what about that thing where I just tweet at myself? That other one was Echo Chamber. Where I just tweeted myself like, that was hitting API from a database. 
+
+[00:00:19] And like I would I do control this database but like, I don't control that database and other things could happen. I'm like yeah, that's true. That's true. It's totally accurate, check this out. So we can do it from the browser we can do it from the command line. 
+
+[00:00:39] I am going to paste this in because it is gnarly enough. It is in the notes and it's also like, I believe it's in the docs as well. I'll paste it in. We will talk about it. You've got this playwright open, which opens the browser just like we saw before. 
+
+[00:00:54] I mean, you can do it with the codegen as well. No, no, no. I'm not doing impulsive changes to the plan. What I want to bring to your attention is this. Are you all familiar with what a HAR is? A HAR is basically anywhere in Chrome in the network tab. 
+
+[00:01:16] If you look at any network request and right-click it, you can do like copy as curl. Super cool. Then you can paste it in there and get the network request. The cool thing about Chrome too is that it'll store stuff like the auth token and cookies and stuff like that. 
+
+[00:01:32] A HAR is basically a file format that is a recording of all the network requests. That it saves to a file. So we've got the save network request.HAR, and then the glob is going to be like maybe, we don't need to save every network request, maybe only ones that are the API routes, right, and then spin up localhost 3000. 
+
+[00:02:01] And we've got the code gen here, and we could hit record and go somewhere. And it did put this interesting extra thing in here, which is record HAR, great, great, great. It's gonna write it to this file in the root directory, not my greatest choice ever, with this URL filter. 
+
+[00:02:28] And then we'll also generate the test. Cool, cool, cool. Go around, let's hit this one. Pika, great. And we'll stop the recording. And you do need to close the browser context. But this will create a file recording all the network requests. Out of the box, Playwright also has the ability, just like we saw with Mock Service Worker, to intercept network requests, right, which you can do manually, just like we saw with mock service worker, or it has a method routes from a HAR file. 
+
+[00:03:07] So theoretically, you could go navigate your entire site, record all the API requests, and then have that be the mock server. Of your own real data as you navigate around and like run your tests, right? And theoretically, if it's also recording the moves you took to make the test. 
+
+[00:03:27] You should have a completely like for all the network requests mocked out test suite that you can go navigate do all the things in your app. Are they gonna be the prettiest? Are they gonna be maintainable? No. Are they going to exist? Yes. All right, and then you may choose to begin to refactor them. 
+
+[00:03:46] You might choose to begin to like, figure out our integration tests. Why would you want unit tests or like what is the level that you need to get to? You could choose to do all of those things, but this will get you most of the way there incredibly quickly. 
+
+[00:04:02] And anyone who judges you whatevs usually will write this when we get the browser context.close. Let's see, do I get a file. There it is, networkquest.heart. Let's open it real quick. It's not anything to look at, to be clear. But you can squint at it and see some things about it as well. 
+
+[00:04:30] As you can see, it's effectively a JSON file. And the reason I bring this up is like a lot of times I will do this recording and then as a JSON file, you can edit it, right? Like I can probably, let's see. Cool, like these are basically everything from the headers to the text response to the mimeType. 
+
+[00:04:55] That everything that basically happened, it is a recording. You can then use this in your test to then simulate the entire network requests at the moment of, and get all of that stuff incredibly quickly, and also do try to tie a lot of the stuff together. What I will do a lot of times, if I'm doing the thing where I'm trying to translate what I got from the API into something I can use, a lot of times even when I'm running a unit test. 
+
+[00:05:18] I might choose to do all the recordings of all the things I'm gonna need, right? Put the UI in a bunch of different states, record all the network responses, right? And then break that into a bunch of JSON files that I can load into the unit tests and do all the massaging of the data with, and then tweak and do a bunch of other stuff with. 
+
+[00:05:36] And using one tool does not mean it can't inform another one of the tools that you use. And make stuff a lot easier for you. And so like all of this stuff, what tests you choose to use can all kind of like string together? Dustin? >> So which is better Cypress or Playwright? 
+
+[00:05:53] >> I think you should totally watch my Cypress course is great. [LAUGH] I would say like it to be clear there is a new version of Cyprus that apparently has component testing built in. I have not migrated yet. So, to be clear, that was being a little bit glib. 
+
+[00:06:10] I will, sometimes you make mature technology choices. Sometimes you're on an old version of Cypress. I think I'm on version nine there is currently version 12. And when we're doing the other, we have like two code bases. And someone on my team said, can I use Playwright? I was like, yeah, go for we're already behind anyway, so like, it's gonna be different no matter what. 
+
+[00:06:33] And then I ended up liking it, but I have not used a new version Cypress I don't actually really know. But that's pretty good, right? And so a lot of this is super powerful but like I said before, it can also inform your unit tests. It can also inform your component tests, it can also inform other parts of your testing is not a necessarily well if you generate from Playwright it only works with Playwright this is a JSON file it's actually a standard that Chrome could have just using the Chrome protocols that could have given you and you can like begin to start like figuring out what you wanna do with this data. 
+
+[00:07:07] Here's the body with the text. You maybe would format that JSON parse, that thing, right? And you will have roughly something that you could use for unit tests as well.
+
+---
+
+# 47. Writing Custom ESLint Rules
+
+[00:00:00] >> Most people have a passing familiarity with ESlint and have dealt with it or have it, whatever. In this case, we're dealing with large code bases, you probably already have it installed. What I wanna do is just kind of like plant a little bit of a flag on two things, which is one, what would it look like to create your own ESLint rule? 
+
+[00:00:24] And it's gonna be a very high level of what are some of the things you could do if you chose to. And then we'll do one more little thing where we'll look at, failing builds are great except that they're not, and so can you catch this stuff on pre-commit? 
+
+[00:00:37] And then that's kind of how we'll pull this into the station with two more little areas of exploration that I think are gonna be wildly helpful for you, but kind of things that are kind of deeper dives later on. And so ESLint, for those of you don't know how it works, it breaks your code into an abstract syntax tree, kind of what we saw with the code coverage. 
+
+[00:01:02] Breaks into a giant tree kind of a DOM that you can traverse up and down and look at things and labels on that's a function expression, that's an argument, that's a the variable declaration, so on and so forth. And a great way to get a sense of this is you can go to astexplorer.net, and you can say, last time I was doing this, let's jack up the font a little bit. 
+
+[00:01:28] Where I wrote some code, and it will show you the tree that is built from that, so you have a program. In this case I have three expression statements, we get more fun highlighting as I hover over stuff. Because again, if you look, this is how even the code coverage stuff works. 
+
+[00:01:47] It's expression statement we're calling something, that makes sense. It's got a callee, it has an argument, I hid location data. You can see its keeping track of where the start was cuz it looks there are new lines, it's just a string of text with new line characters, right? 
+
+[00:02:04] As it's parsing through and making sense of stuff, it can see all that stuff. I don't necessarily care, I care about the meaning of my program, right, we can minify stuff, it's how all this stuff works. What is super powerful here, I realized that it has local storage, so some of the surprise is ruined. 
+
+[00:02:27] But if I wanted to change this console error, it'll cross my code base, auto fix ' to a log error. I can literally write my own ESLint rules and either yell at you, not preferred, or kinda go through and get a sense of the structure of your code and can auto-fix. 
+
+[00:02:47] So let's say, and this is a little naive, there's import statements you'd have to deal with, right, and stuff like that, but the concept is there. Which is, I want to change console errors, I want to fetch the request from API. I will actually do that once, you can watch me live code instead of me pointing at a bunch of stuff. 
+
+[00:03:10] So let's start this over a little bit. But one of the great things is you can take whatever the questionable code is. So in this case, we wanna change fetch to request from API. So, cool, if I hover over that, you can see me move around, and I'm different things like string literal. 
+
+[00:03:30] So looks like this is an identifier, right, with the name fetch, great. So let's go ahead and let's just delete this, and we can say identifier. Cuz as it goes to the triggers just you setting up a bunch of rules for what you want to happen, right? In this case, the ESLint rule was not fired because nothing triggered it, that makes total sense. 
+
+[00:04:00] What am I choose to do here the actual node is passive, not Node.js, node as in node tree, DOM node, that kind of node. Where I have it, I can ask things about it, so I could say literally I know some things about it, right? I can see that it's got some arguments in TypeScript, you can do string, you can do a certain amount of template literals. 
+
+[00:04:29] But you could theoretically be like, hey that's, so you can do also, you can basically do anything you want with static analysis to your code using this, right? So, once you have the test, once you know the plan of action of what your particular code base needs, you can say all right, go there. 
+
+[00:04:45] If I find an identifier, which is basically a function name or something like that, you can do something if node.name, this is fetch in this case, right? Then we can start by just saying, we'll take this context here. We'll say context.report. And in this case, we'll say, The message is, Whatever, right, making it up. 
+
+[00:05:29] And so we can do that, cool in pass in the node. What is my issue here? Put a comma in there. >> Misspelt identifier on line nine. >> That will be my issue. This is why, to Mark's question of why I like TypeScript is because you are my TypeScript right now in this editor and I clearly. 
+
+[00:06:01] If it looks I can code, you take TypeScript away from me, and it's unclear if I can. >> [LAUGH] >> So cool, you can say at this point it is just yelling at us. It's like, hey, prefer requestFromApi, yeah, over fetch, and it's kinda cool that it will yell at you with the line and the character that that shows up on, right? 
+
+[00:06:26] And so you could theoretically, now you don't have to be pedantic during code reviews. You can set up the rules in this case, right? You can just pull it in as ESLint rule, you don't have to build infrastructure for this. If you have npm run lint or whatever, and you have the GitHub action we talked about earlier, right? 
+
+[00:06:43] You basically just inherit this rule and it will now break the build if they use fetch. >> Wait, how does this get into your checks in your code? >> Yeah, so if you have ESLint installed you can just add it as an extra rule. >> Add what? What do you take? 
+
+[00:06:59] >> Effectively this code down here that we're writing, right, this is how a rule is structured, right? Then you get in your .eslintrc, you can also pull in additional home written rules. So now this will yell at you, I think you can do, yeah, here you can see in the metadata, I can do problem or suggestion or something like that. 
+
+[00:07:23] And it depends on what one will break the build, one, GitHub has annotations now, one will just automatically, yay, you should consider doing this other thing, right and be a lint warning and- >> Is there a way where it'll just do it for you? >> I love that segue, is there a way where you can have it auto fix it for me? 
+
+[00:07:48] So you see that one of the metadata that I do have set is whether or not this is fixable, which I ask myself about myself all the time. And there are some nuances to this, but let's do the world's simplest case, which is cool. Let's say, all of our little weird helper methods are effectively API compliant with the very simplest use case here, right? 
+
+[00:08:14] And so cool, report that we had a problem absolutely, then what I would like you to do is let's apply a fix in this case. So we have one more method, we have the message, what node you put in your own location data too, but this is good enough for us. 
+
+[00:08:31] We'll say fix, right? And then you have this, fix it, sometimes APIs are weird. So we've got this fixer, and what it does is returns an array, which is all the weird changes you need to make to this thing. And to be clear, fixer, yeah, I'm just I'm glancing down at the methods right now. 
+
+[00:08:53] It's insert text after, insert text after a range, insert text before, remove from the code completely, so you could have it just remove the console logs if you want it, right? And you can go up and down the tree, you can look at its parent, you can do all sorts of stuff. 
+
+[00:09:11] You can replace some of the text, that seems useful if we wanna just replace all fetches with requests from API, right? You can do all sorts of things, you can replace a text range. You can do all sorts of interesting stuff, remove it completely, break the build. Let's do this array, it's just all these changes you wanna apply, so we'll do fixer.replaceText, in this case. 
+
+[00:09:35] On this particular node, right, cuz you might go up and down the DOM tree and find other stuff as well. If you've ever used jQuery, you secretly know how to do this better than it looks to you right now. And let's say we'll replace that with requests from API 
+
+[00:09:51] >> Is this Node the top left window? >> Which one? >> Node, is that referring to the top left? >> Node, is what is currently highlighted here, right? So each kind of token, I'm just taking one word, do you understand with another one, right? The parser goes through, and it's analyzing your code, so call expression is a node on the tree. 
+
+[00:10:14] It has some a children which are identifier and then the arguments, nodes on that tree further down. Think about a DOM node and that tree, that's effectively what is turning your code into. And so if you look at the output now, is that it didn't even fire an issue, it just auto replaced. 
+
+[00:10:36] So now, if you had texts of the word fetch in it, that wouldn't get replaced, it has to be a fetch identifier which is a function call, right? And it will go and only in those explicitly meaningful cases, will it go and swap it out? >> Do you think there's a point though that it gets- 
+
+[00:10:59] >> Yes. >> Too much in the sense that here you're actually changing function because a functional reason versus source order or punctuation or whatever. I just feel like here, you'd almost want the engineers to really get used to writing requests from API versus- >> Yes. >> It'll just fix it for me. 
+
+[00:11:18] >> Yeah, to be clear, this was the easiest example to write. Would I have this set to auto-fix? No. >> Cool. >> Right, absolutely not, would I hypothetically want to run this one once, right? Look at the diff, eyeball it and then maybe have it do a suggestion or warning after that, probably right? 
+
+[00:11:44] >> So- >> Cuz if I get this wrong, I have now taken somebody else's well-meaning code and shipped a bug to production, yeah. >> If you wanted to, for example, just replace console logs, would you just fix it out, replace text, console log, and then just an empty string, or how does that look? 
+
+[00:12:04] >> If I just wanna say it again, I was listening and thinking. >> The one example you mentioned was, you could use it to just remove all console logs. >> Yeah, there was remove. I can remove the node completely. Let's see, I don't know with the name, I think it will take the entire thing out. 
+
+[00:12:20] Let's find out together. So I want to take all the fetches out, I don't know, it's easy to do. So remove, I have to do a range on that one, remove node or token I just got passed in. Okay, yeah see I gotta get a little more nuanced and traverse the tree a little bit better on this one because that's a problem, but the nice part is the arguments is the next one down there, right? 
+
+[00:12:48] There was the literal, you can see as highlighted on the upper. I know you probably can't see. For those, paying attention at home, that is yellow. [LAUGH] Y'all can't see and everyone at home can see, I can see that as I'm over here, well, back when it worked. 
+
+[00:13:10] Yeah, you can see all right, you can see the yellow, I guess I moved the mouse while I was talking, then I couldn't see it. But yeah, you can kinda see and get a sense of it, so yeah. Yes, what you can live code, this kind of stuff is kind of squarely and stuff along those lines.
+
+---
+
+# 48. Husky & Lint-Staged
+
+[00:00:00] >> One last thought, and then we pull this train into the station, and we are done with how do you maintain sadness. So the most junior engineer on my team, I don't know what happened, but for some reason, her prettier configuration, her editor was formatting files different than what our build process was doing. 
+
+[00:00:28] And so all of her PRs failed the, we gotta fix the department of working remotely is you can't be like, hand me your computer, let me figure out what's going on. Cuz like, pair programming on what your editor plugin is formatting your code, with, impossible. But it occurred to me, that's not her problem, that was a me problem, right? 
+
+[00:00:51] I have a process that clearly if your editor wasn't configured magically everyone on my team else had their editors configured the same way, or for a junior engineer who just doesn't know that you set these things, she couldn't have a PR that could be merged. And then we had this comedy of errors where I tried to be a good mentor, and I was, actually, I'm a bad mentor in this story. 
+
+[00:01:14] I was like, I will push a commit where I fix the formatting to make prettier satisfied cuz my thing does it right, and I will just run prettier--write and solve everything. And the problem is again, working remotely, I was like, I'll just do this, I'm in the middle of a meeting. 
+
+[00:01:31] I hope none of my team, cool, they know I don't pay attention to meetings, my actual co-workers, if they make it this far in the course, I'm in trouble. I would push a commit but she didn't know that I pushed the commit, then she would push the commit, but her editor would re-break everything. 
+
+[00:01:46] But she thought because there was a change that it fixed everything, and then we would go from green to red, to green to red, to green to red. What would be great is if something was willing to tell me in advance if life is okay, right? And this was a tool that I use while back I will tell you like the escape hatch bit me, but we'll talk about this. 
+
+[00:02:10] So I'll just install it in this repo, we'll find out what happens. There's this tool called Husky, and it's got some friends that we'll talk about in a second as well. In this, you should probably, npx does not install things, npm install husky. Husky takes advantage of a feature in Git, which is there are Git hooks, right, which are functions that are called, and they are written in Bash, and I don't as we saw me trying to kill a port. 
+
+[00:02:41] There was a time that I knew Bash, it was 15 years ago and you see that I still use the GitHub UI cuz I don't choose to live on the command line when I can avoid it. Have I thought about building an electron app that spins up my stuff? 
+
+[00:02:55] I have. These are my problems. Husky, and then you have to do Husky install, so npx husky install. One thing you can, if you wanna script that automatically, the prepare script in npm, there are certain ones that run automatically, it used to be post install would automatically run post install, pre install would run pre install. 
+
+[00:03:22] There's pretest and post test so you could like yeah, there's stuff you can do, we have real build tools now. Prepare will actually run this after you do a npm install so the new people will automatically get these hooks as well. And it's very unassuming, all you say is husky Git hooks installed, and that's pretty great, but one of the things we can do is we could do something like npm husky add, I think I'm doing this in memory unknown command. 
+
+[00:04:03] We can tell we're at the end of the day because I can't remember npx versus npm. Look, it created pre commit. Cool, let's go ahead and take a look at that. We'll just do pre commit. Presently, it is undefined, right? Things that I could choose to do here and there's a bunch of other hooks, I'll leave it as exercise to the reader here. 
+
+[00:04:28] I could do an npm run test, right? Now when you go to commit, it will run the tests. Somewhat problematic because like, maybe sometimes I wanna commit cuz, you might all be better than me. And this is why I suppose like where I'm a charlatan, I have stashed things in Git before, I've never unstaffed anything, in a world where the default action is squash and commit. 
+
+[00:05:00] My good hygiene is abysmal. And so you, running a test is somewhat problematic and like sometimes I just need to commit some things and push it up cuz I'm worried that my computer will be stolen, and I just want them in the cloud, right? I don't necessarily, I know the tests are failing leave me alone, so you could do something like that thing that I it's in the notes but I didn't actually talk about you could do an npx vitest changed. 
+
+[00:05:28] Which will either be the currently unstaged stuff or you got to do a comparison to another commit. We're only running the test files for stuff that has changed since the last commit, right. So that gives you a much smaller set of tests rather than writing the whole suite. 
+
+[00:05:45] That will work, you could, to complete our story here, you do npm, and maybe this is npm run format, but just to be super clear, npx prettier --write or whatever, right? And so now, as you go to commit, prettier runs before the commit happens and then adds those changes as well and then the commit takes place, right? 
+
+[00:06:12] So now I don't have to worry about Grace's editor being set up the way my editor is set up because the actual code base will do it itself and stay self-hygienic in that sense. The other two things that I will just kind of bring to your attention is there's also a tool called npx lint staged. 
+
+[00:06:37] This does the very simple thing as it takes the files that are about to go into commit, and then passes them to other commands. So you might write a file and it might be called like a linter, I think it's .lintstagedrc, and it's a JSON file. 
+
+[00:06:52] I was just was just a JSON I will just kind of type one out. And what you can do with lint staged, you have some file which I could explain it to you, but it'll become incredibly clear what it does momentarily. TS or js files do It's a JSON, so I gotta do a double quotes, Right, and it will only pass the files that changed in there, right? 
+
+[00:07:30] I can do npm run format, I could do Those get passed in as arguments, if it is like a markdown like that'll only be for this case ts and js files or TSX yeah, whatever. Markdown files, I can do like I have a script that renders those to HTML, and like so we can like push them up to the docs, whatever. 
+
+[00:07:53] It will basically take whatever the stage files you're about to commit are, and it will run them through whatever scripts that you want, and it's a way to combine with husky. Now you're not running the entire code base through these commands, you're only running the files that changed, right? 
+
+[00:08:11] One of the things I did that you shouldn't do anymore, was back when I had Jenkins and it was in 2017, is we had this abysmal code base, this is the one I think I referred to earlier. It was a Rails and CoffeeScript and jQuery app, that then they ripped out the some or most of the CoffeeScript and jQuery, and placed it with React, but it was their first React app, and anytime they didn't understand anything, they pulled out jQuery and just went for it. 
+
+[00:08:36] And then they removed the Rails app from underneath. Needless to say, there was no linting or tests. And so the rule that I had was we ran, if you touched a file, you had to fix it, even if you were just doing a minor change, and I bring this up for an important reason. 
+
+[00:08:56] And what I found out later was I was sprint planning and my manager, everyone was complaining we didn't get anything done because every file they touched, they had to do a bunch of lint fixes for, but everyone was touching the same files. And he was like, do you want to have a meeting about lint rules? 
+
+[00:09:10] I'm like, never, right? And my rule for lint rules is pick either the recommended or the Airbnb or whatever, just pick one and go for it. I don't wanna talk about this unless it's my opinions on how prettier should be set up. If you ever need to get out of any of these, you do git commit whatever --no verify. 
+
+[00:09:26] And I found out that the intern knew about that, and the intern was doing it, and then everyone learned from the intern that you could skip all the checks. And then everyone started doing it, so I was like who has done --no-verify this week and everyone raised their hands, I'm like, so the person you hate is at this table, [LAUGH] it's all of you, you're all guilty. 
+
+[00:09:47] But you can run the lint staged stuff and there's some other tools I'll just bring to your attention, we'll put links in the recording version. There's a tool called Danger which can kind of hook up and stuff, which we'll enforced, did you put a long enough body on your git commit? 
+
+[00:09:59] There's ways to take some of the process, I don't actually use that many of them. The one of formatting stuff, totally. The one, we have thought because we have an open source code base and we seek to auto generate release notes. We have discussed if we wanna be the people who have to make it, they do chore colon on a git commit versus fix so that we can better process release notes because presently I write them [LAUGH]. 
+
+[00:10:23] For a practical reason, but it like one I will warn you with all these tools and why I will not separate on them too much is, can they automatically prepare your file so you don't break the build? Absolutely. It is too easy to be, I'm gonna have a lot of rules instead of error code based better, you will turn them off and everyone will hate you, probably not other orders, everyone will hate you and then you will turn them off.
+
+---
+
+# 49. Enforcing Standards Q&amp;A
+
+[00:00:00] >> Now, how do I convince my team to do all this stuff? >> That's- >> It's a question I always have. >> Yeah, I mean, let's talk about that a little bit. That's a tricky question cuz every team is different, right? I have had the secret advantage of, I've been able to pull rank for a really long time now. 
+
+[00:00:21] Do you know what I mean? So I am not the best person to answer that question unfortunately because I've either been the most senior engineer or everyone's boss, right? That's a new, previously, I was just, whatever, at least had no actual authority, but at least a title that made people think that I had some power. 
+
+[00:00:44] I had no power as the frontend architect at Twilio. It was mostly me kinda trying to salesmanship and charisma my way to getting stuff done, but there was probably an illusion, right, that I was fancier than I really was. So it not always depends on the team. But I think part of it is, to be honest, cuz I was anticipating a question like this, so I thought about it on the plane. 
+
+[00:01:08] I think part of it is, I have worked on teams where the person who wants to have the most, Ambitious lint rules, how about that? And there the person wants to have a 90% code coverage enforced thing. Not always the exemplars on the team, right? And so it's hard to make that. 
+
+[00:01:38] And so I think part of it is leading by example is my way of saying that, which is like, hey, I'm willing to hold myself to this standard and look at the positive change. And understanding change management is a whole thing in and of itself, right? You don't want a New Year's resolution, this stuff, which is, you know what, new rule, we're gonna have all of these lint rules. 
+
+[00:02:05] You add one, one after an incident. You know what I mean? One after we caught something, and then you add a second one a little bit later, right? And you slowly, people don't want the world changed out from beneath them, they have jobs to do. Yes, everyone wants to work in a healthy code base and everyone wants to be fit and all of these things, right? 
+
+[00:02:29] And the answer is not necessarily like you're gonna immediately change everything all of a sudden, it's like maybe you just put on your running shoes in the morning, you don't even have to go over a run. All right, and all that stuff that you read in books from the airport applies to your code base too, right? 
+
+[00:02:44] And I think that kind of small change management getting people on board because there is a value. These patterns and practices don't exist for the fun of it, right? They exist because they work, but sometimes you people need to, you start with something small, people see the value in that. 
+
+[00:03:04] You kind of move the Overton window a little bit, and then you do the next thing, right? And then slowly, everyone's like, remember when we had to manually test every PR for two hours every Friday so we could release on a Monday? Yeah, that was bad, good thing we don't have to do that anymore. 
+
+[00:03:21] And you're like, let me tell you about enforcing rules on commit messages to automate the release notes so that I don't have to write them by hand. That one's gonna be a harder sell. They all said yes, but I haven't done it yet. Do you know what I mean? 
+
+[00:03:33] I think that when like, because I do it all the commits against whatever. You start with like let's have a more maintainable, you start with those playwright tests. Boom, right? Yeah, they're slow cuz they clicked everything on the app and they're like two of them, but then they caught a thing that we didn't ship to production. 
+
+[00:03:51] [LAUGH] Dope, right? Let's do the accessibility checks on just the design system components, right? Unless maybe just as warnings to the beginning, now we have fully accessible and compliant things. And then you hope that the reason I found the lint issues is I had a bike, two people from sales and two people from solution architecture going like, just a question, what is it? 
+
+[00:04:17] What is it, w? >> CIG, okay? >> Yeah, are we that compliant? And I'm like, let me check, and that's when I found out the issue. I was like, no, but we could be like, no, it's not a big deal, I was just asking cuz someone asked. And I was like the third time someone in a week asked me that, I'm like I understand how this plays out. 
+
+[00:04:39] Three months now, they wanna sign a contract, and they have our stipulation and now we're pulling all hands on deck move. So we just slowly dealt with them, and that hasn't happened yet. But my suspicion is that in a month when it does happen and we're like, yeah, we're ready, that value add for the team is there that we didn't have to go through that death march. 
+
+[00:04:58] In order to do it, I think that stuff starts to accumulate over time, and that's how you make the change. You don't come in like, yo, I went to this workshop for two days and I think we should lint all the things and break everything. Code coverage, it's gonna be 1,000, you are not gonna be everyone's favorite person, [LAUGH] right? 
+
+[00:05:17] And it's about figuring out the long term, the quote that I think a lot about just as a gen. If you wanna end this on life philosophy, here's the quote I think a lot about, it's pretty true to six different people. Let's take your favorite pick, which is people overestimate what they can do in a year and drastically underestimate what they can do in ten years, right? 
+
+[00:05:40] And those small changes add up. >> How do you manage testing components where you have to navigate to a particular route in order to render that component? >> You have two choices, right? One is you can take the browser and go for it, right? But that's probably not the answer that you wanted. 
+
+[00:05:55] The other piece then is it comes down to the doing the work to break out the components so you can lift it out of the codebase. And that's where a component has, yeah, there's so much stuff happening, marking out the entire world is gonna be hard. At that point, with a certain amount of passing the dependencies, can you get to the point where everything that it needed for where it was lodged into that code base? 
+
+[00:06:21] Can you pass those things in and then pass them in there and then lift it out and then pass in a similar? And TypeScript here makes it a little bit easier to because you will get yelled at if it is not a compliant function lifted out. And then that's where I might choose to use a component test, right, so that I don't have to navigate all the way there, right? 
+
+[00:06:42] But it's tricky cuz it's very easy to talk about in the abstract, it's very easy. You just left out your component testing. Yeah, I tried to do that for two or three of the examples here, and I found out that even in my code base, a little bit easier said than done. 
+
+[00:06:54] In all fairness, I had to weigh, I'm not lifting this out for anything other than an example. And I had to weigh it against what's faster writing a fictitious example or lifting this out for no actual value other than that. And so yeah, there was that, but even in my own code base, it's like I understand that a lot of the stuff is easier said than done. 
+
+[00:07:13] To my point earlier is you wanna do all these things tomorrow, right? With the entire tool set that we talked about, there's probably something that seems the easiest, right? Start with that, slowly improve the code base over the next year, don't try to fix it next week. >> What does the translation layer look like in code? 
+
+[00:07:35] >> So the concept I stole from Ember, it is whatever garbage deeply nested object that some backend engineer thought was a good idea cuz they just stitched it together from a bunch of other objects. Cuz they're used to, yeah, I need a flat thing to have some props that I wanna dig down, whatever, like gnarly. 
+
+[00:07:57] Objects were, the thing that I need for the H1 or the H2 is seven layers deep. And in every component where I need it, I'm going down there. It is literally not different from that ESLint rule that we saw. But it is literally a thing that takes these gross objects that I'm used to dealing with all the time and makes it into a nice, flat, easy object where everything's formatted correctly. 
+
+[00:08:20] That is almost the perfect example of what you could unit test. You grab the JSON, you go into Chrome, you go to your network tab, you hit copy response, you paste it into unit test, right? Then you expect it to be what you wish that your API was. 
+
+[00:08:39] And then you start doing things until it is. And now, instead of calling fetch, you call that request from API, you call get whatever is in your app. Everything passes through there, right, and gets formatted the way you want, and you never think about your gross API again.
+
+---
+
+# 50. Wrapping Up
+
+[00:00:00] >> And with that, those are kind of like some of the high level strategies. I will take just one or two more minutes to talk about some patterns because I promised. So some of the patterns I think are good. Like I said, Prefer Dependency Injection. Now, the default arguments exists in JavaScript, let's say hypothetically your function calls fetch. 
+
+[00:00:20] And I do this actually, the fetch one is interesting, because I accidentally discovered why I should do this in fetch. Is that the fetch that exists in the browser and the fetch exists and most server side rendered frameworks are different fetches, right? Window.fetch does not exist in node 18, whatever year it was, fetch did not exist in node, right? 
+
+[00:00:42] So I'd have to do something like yo, if we're in the browser, and it's available, yeah, fetch. Otherwise, if we're on the server side rendered piece, I will pass you in a fetch, right? And I accidentally discovered this is a really powerful pattern. Cuz now it's not like, fetch was available. 
+
+[00:00:59] For any of the things that might otherwise just be imported and then just somewhere deep in the closure scope of my function. I will have the last argument will be just like a whole bunch of fetch or maybe anything else that I would normally just import and include. 
+
+[00:01:16] I will still import them, and there will be the default argument, but there's the ability to pass in a different functionality if you want. First, that was originally for server-side rendering. Then I found out that was great for testing. Then I found out, I need that function but it made some assumptions. 
+
+[00:01:34] But I've already made the API flexible because I can pass in some other string formatter here instead of whatever I initially intended, right? As the callback function, and I can reuse this someplace else and get all of the goodness for free without having to copy and paste or rework the function. 
+
+[00:01:49] So anywhere where it's the thing that think might want to be pluggable. Even if it's a default argument and you almost always use the default argument, give yourself the ability to pass in a different functionality in there, right? If it's something that's traversing a tree object, right? I had one they use that it was just a breadth-first search and depth-first search. 
+
+[00:02:10] And it was effectively a cheap version of the ESLint thing we looked at, because I needed it for something. But then I instead of like traversing the thing and calling a function, I did that but I had you could pass in a function, right? All of a sudden, what do you know six months later I need to do something similar. 
+
+[00:02:26] Use the same thing, I fixed a bug and one I fixed two bugs. Some of this is used the tests to find the bugs, using these tools to analyze your code, find all the bugs. But then having the ability that everything kinda passes through as few places as possible, and you've made them super flexible, is incredibly powerful for making large scale changes. 
+
+[00:02:44] And then you have the infrastructure to know everything works and you don't have to change like six test files cuz that tree traversal one that does a thing is different than that one, walk the tree, whatever. But thinking about how many options that you might need and making them default arguments you don't have to pass a thousand things every time. 
+
+[00:03:01] But if you do need to override one of those things, giving yourself the ability early on. So this is what that might look like. This is not doing it, right? Important things, use them in that closure scope. You want to use a different hook for grabbing something cuz especially with UI components. 
+
+[00:03:21] So it was an accordion list, and it was fetching directly from the API. Pass in thing you should fetch from, even if it's like passing a URL that you think is never gonna change, right? Let it be the default argument, life goes on, it doesn't really matter. But then later if you wanted to, it has default arguments, right? 
+
+[00:03:43] When I use it, I'm not calling it with any arguments because by default, those are the defaults. If I need to override one, and using an object here is usually a lot better, but it's hard to fake that. Cuz then you don't have to be in any particular order cuz if you need to fake the fourth thing, then you have to do like undefined, undefined, undefined thing versus an object and the spread operator. 
+
+[00:04:02] All this stuff was harder before modern JavaScript. But then just giving yourself the ability to pass stuff in, make everything a prop with default arguments that you think you might need to swap out later, and then you just can, right? Even if you're gonna keep open and close as state, right? 
+
+[00:04:19] You could pass into like, what the initial like what you're gonna pass that you state hook as the initial argument is. And then all of a sudden, one day the designer is like, I want this particular one to be opened by default. Cool, you already gave yourself the ability to pass in as a prop, right? 
+
+[00:04:39] And then I said before when we saw what the [INAUDIBLE], these are all things I've said various places. Which is like having, hooks are great cuz they're wonderful, and I talk a lot of smack about hooks because it's fun. But I've written, do you know how many years it took me with that Redux to map dispatch to props and map states to propts before I actually knew what that was doing? 
+
+[00:05:04] Right, it's all that stuff is squirrelly, but this idea that you would have just the view layer component that doesn't have any state management whatsoever and gets everything in props. And a component above it that does all the hooks and prompts and passes it in means that you can grab that other one totally separate provider, and your test pass stuff in it. 
+
+[00:05:22] And again, of the sudden you find out that you need roughly the same UI for something, completely different, with different state, you just hug in a different state management container. And then by default you export that one, that's everything. So as you use this component, you just use it like you've jammed everything together. 
+
+[00:05:38] But you can export that other ones if you just needed the view, you can easily pull it out. The ability is how much is your stuff glued together versus, yeah, pretend it's glued together, but it's more snapped in there. And then you can kind of pull that stuff out and be really happy and stuff along those lines. 
+
+[00:05:56] And so there are some patterns that kind of once you have some of the rules, once you've got the framework that you can begin to do so you can change your mind. Cuz like most of the tech debt that I've accrued is not because I'm bad at this also because I'm bad at this. 
+
+[00:06:08] But most of the tech debt that I've accrued is like the ask or the assumptions and what we thought we knew about the world at the time were totally true and there were good choices. There was this book Thinking In Bets, which is like, you can make a good choice that has a bad outcome, a good choice it has a good outcome. 
+
+[00:06:24] A bad choice it still has a good outcome because luck, or bad choice has a bad outcome, like a lot of the tech debt that we have in our code bases is good choices at the time. Whoever made that choice in 2017, with the information they had, made a good choice. 
+
+[00:06:39] In 2023, everyone hates that part of the code base, right? And so it's about how much ability to pull stuff apart, swap stuff out, and giving yourself that framework. And then if you don't have it, you inherit a code base. Smother in an automated playwright tests with some screenshots that catch the div and start fixing it and pull it apart. 
+
+[00:06:56] But these patterns I've now for some of these that we've talked about today. It's one of the things if you have like one, like either code base that you've either built from scratch with some of these patterns. And there's one more that we'll talk about. Or refactor things, you do it once you don't know if you're lucky. 
+
+[00:07:14] Or like this is a pattern that works. You do it two or three times, and there might be other patterns, these are the ones that have worked for me, right? The last one and we talked about this is it is very tempting to use a use effect or what have you in your component. 
+
+[00:07:31] And then massage the data in our view layer component, all over your code base everywhere and format stuff. And then all of a sudden the backend engineer changes an API or we choose to change an API and you've gotta chase down all of those. One of the things I usually do with, we saw request for API. 
+
+[00:07:49] I'll also have whatever the nouns in my thing are is like if it was a to do list, I would have a function called get all to dos and get to do that takes an argument. Maybe that calls requests from API under the hood, and then it calls fetch. 
+
+[00:08:03] But it gives me if all the times I'm fetching a thing are going through the same function. And it's always the same bug by the way. It's some back end engineer because it's Go it's Golang, it's Golang. They do something, and instead of an empty array when there's nothing, it's now undefined or null. 
+
+[00:08:22] And then I was calling map on it all throughout my code base on all these different views. Now, I got to chase down all of them, I learned the hard way. No, no, we format the data in one place right after we get the API. And when they change that empty array into a null, I fix it in one place and everyone gets it for free. 
+
+[00:08:43] And just kinda like building up these abstractions of how little change for changes outside of your control can you deal with, right? And then we've got the test, we've got the build processes, we've got all the stuff that supports that. But it's about one, you can't do that until you have those processes in place. 
+
+[00:08:57] And then once you have those processes in place, these things will make sure that it will kinda keep you honest and keep you working on everything. And that that is my spiel. Thank you. >> [APPLAUSE]
